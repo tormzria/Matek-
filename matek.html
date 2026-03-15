@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matek gyakorló</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f4ff;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      margin-bottom: 18px;
+      color: #555;
+    }
+
+    .score {
+      font-size: 22px;
+      margin: 8px 0 18px;
+      font-weight: bold;
+    }
+
+    .task {
+      font-size: 54px;
+      font-weight: bold;
+      margin: 18px 0 24px;
+      line-height: 1.2;
+    }
+
+    input {
+      width: 100%;
+      font-size: 34px;
+      padding: 18px;
+      text-align: center;
+      border-radius: 18px;
+      border: 3px solid #cfc7ff;
+      outline: none;
+      margin-bottom: 16px;
+    }
+
+    input:focus {
+      border-color: #7b61ff;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 20px;
+      padding: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .check {
+      background: #7b61ff;
+      color: white;
+    }
+
+    .next {
+      background: #ffd84d;
+      color: #222;
+    }
+
+    .sheet {
+      background: #47c98b;
+      color: white;
+    }
+
+    .message {
+      min-height: 42px;
+      font-size: 28px;
+      font-weight: bold;
+      margin: 12px 0 8px;
+    }
+
+    .good {
+      color: #1a9c5d;
+    }
+
+    .bad {
+      color: #d83b3b;
+    }
+
+    .small {
+      font-size: 18px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .sheetBox {
+      margin-top: 20px;
+      text-align: left;
+      background: #f4f7fb;
+      border-radius: 18px;
+      padding: 16px;
+      display: none;
+    }
+
+    .sheetBox h2 {
+      margin-top: 0;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    #sheetOutput {
+      white-space: pre-line;
+      font-size: 24px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Matek gyakorló</h1>
+    <div class="subtitle">Egyjegyű összeadás és kivonás gyerekeknek</div>
+    <div class="score" id="score">Pont: 0 / 0</div>
+
+    <div class="task" id="task">3 + 4 = ?</div>
+
+    <input id="answer" type="number" inputmode="numeric" placeholder="Írd be a választ" />
+
+    <div class="buttons">
+      <button class="check" onclick="checkAnswer()">Ellenőrzés</button>
+      <button class="next" onclick="newProblem()">Következő feladat</button>
+      <button class="sheet" onclick="generateSheet()">10 feladatos gyakorlósor</button>
+    </div>
+
+    <div class="message" id="message"></div>
+    <div class="small">Az eredmény mindig 0 és 19 között marad.</div>
+
+    <div class="sheetBox" id="sheetBox">
+      <h2>Gyakorló feladatsor</h2>
+      <div id="sheetOutput"></div>
+    </div>
+  </div>
+
+  <script>
+    let a = 0;
+    let b = 0;
+    let op = "+";
+    let correct = 0;
+    let score = 0;
+    let total = 0;
+
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateProblemData() {
+      let aa, bb, oop, result;
+
+      oop = Math.random() < 0.5 ? "+" : "-";
+
+      if (oop === "+") {
+        aa = rand(0, 9);
+        bb = rand(0, 9);
+        result = aa + bb;
+        while (result >= 20) {
+          aa = rand(0, 9);
+          bb = rand(0, 9);
+          result = aa + bb;
+        }
+      } else {
+        aa = rand(0, 9);
+        bb = rand(0, 9);
+        result = aa - bb;
+        while (result < 0 || result >= 20) {
+          aa = rand(0, 9);
+          bb = rand(0, 9);
+          result = aa - bb;
+        }
+      }
+
+      return { aa, bb, oop, result };
+    }
+
+    function newProblem() {
+      const p = generateProblemData();
+      a = p.aa;
+      b = p.bb;
+      op = p.oop;
+      correct = p.result;
+
+      document.getElementById("task").textContent = `${a} ${op} ${b} = ?`;
+      document.getElementById("answer").value = "";
+      document.getElementById("message").textContent = "";
+      document.getElementById("message").className = "message";
+      document.getElementById("answer").focus();
+    }
+
+    function checkAnswer() {
+      const input = document.getElementById("answer").value.trim();
+      const msg = document.getElementById("message");
+
+      if (input === "") {
+        msg.textContent = "Írj be egy számot.";
+        msg.className = "message bad";
+        return;
+      }
+
+      total++;
+
+      if (Number(input) === correct) {
+        score++;
+        msg.textContent = "Ügyes!";
+        msg.className = "message good";
+      } else {
+        msg.textContent = "Nem jó, próbáld újra.";
+        msg.className = "message bad";
+      }
+
+      document.getElementById("score").textContent = `Pont: ${score} / ${total}`;
+    }
+
+    function generateSheet() {
+      let lines = [];
+      for (let i = 1; i <= 10; i++) {
+        const p = generateProblemData();
+        lines.push(`${i}.   ${p.aa} ${p.oop} ${p.bb} = ____`);
+      }
+
+      document.getElementById("sheetOutput").textContent = lines.join("\n");
+      document.getElementById("sheetBox").style.display = "block";
+    }
+
+    newProblem();
+  </script>
+</body>
+</html>
