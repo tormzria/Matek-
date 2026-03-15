@@ -1,422 +1,339 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Matek gyakorló</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matek gyakorló stabil</title>
   <style>
-    :root{
-      --bg1:#f7f4ff;
-      --bg2:#eef6ff;
-      --card:#ffffff;
-      --ink:#1f2430;
-      --muted:#667085;
-      --primary:#6f5cff;
-      --yellow:#ffd84d;
-      --green:#18b368;
-      --red:#e34d4d;
-      --blue:#3f7cff;
-      --line:#d9def0;
-      --shadow:0 12px 32px rgba(38,34,90,.14);
-      --radius:22px;
+    body {
+      margin: 0;
+      padding: 14px;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#f7f4ff, #eef6ff);
+      color: #1f2430;
     }
 
-    * { box-sizing: border-box; }
-
-    body{
-      margin:0;
-      font-family: Arial, Helvetica, sans-serif;
-      color:var(--ink);
-      background:linear-gradient(180deg,var(--bg1),var(--bg2));
-      min-height:100vh;
-      padding:14px;
-      -webkit-tap-highlight-color: transparent;
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
     }
 
-    .app{
-      max-width:760px;
-      margin:0 auto;
-      display:grid;
-      gap:14px;
-      padding-bottom:18px;
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.12);
     }
 
-    .card{
-      background:var(--card);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:16px;
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 30px;
     }
 
-    h1{
-      margin:0 0 8px;
-      text-align:center;
-      font-size:30px;
+    .sub {
+      text-align: center;
+      color: #667085;
+      margin-bottom: 10px;
     }
 
-    .sub{
-      text-align:center;
-      color:var(--muted);
-      font-size:16px;
+    .debug {
+      display: none;
+      white-space: pre-wrap;
+      color: #a40000;
+      background: #fff1f1;
+      border: 2px solid #efb5b5;
+      border-radius: 16px;
+      padding: 12px;
+      font-weight: bold;
     }
 
-    .debug{
-      display:none;
-      background:#fff1f1;
-      color:#a32020;
-      border:2px solid #f0b7b7;
-      border-radius:16px;
-      padding:12px;
-      font-weight:700;
-      white-space:pre-wrap;
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
     }
 
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:10px;
-      margin-top:14px;
+    .stat {
+      background: #f6f8ff;
+      border-radius: 16px;
+      text-align: center;
+      padding: 12px 8px;
     }
 
-    .stat{
-      background:#f7f8ff;
-      border-radius:18px;
-      padding:12px 10px;
-      text-align:center;
+    .statValue {
+      font-size: 24px;
+      font-weight: bold;
     }
 
-    .statValue{
-      font-size:26px;
-      font-weight:800;
-      line-height:1;
-      margin-bottom:4px;
+    .statLabel {
+      font-size: 13px;
+      color: #667085;
+      margin-top: 4px;
     }
 
-    .statLabel{
-      font-size:13px;
-      color:var(--muted);
-      font-weight:700;
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
-    .settings{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
+    label {
+      display: block;
+      font-size: 14px;
+      color: #667085;
+      font-weight: bold;
+      margin-bottom: 6px;
     }
 
-    .field label{
-      display:block;
-      font-size:14px;
-      color:var(--muted);
-      font-weight:700;
-      margin-bottom:6px;
+    input[type="number"] {
+      width: 100%;
+      min-height: 52px;
+      border: 2px solid #d9def0;
+      border-radius: 14px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
     }
 
-    .numInput{
-      width:100%;
-      min-height:54px;
-      border:2px solid var(--line);
-      border-radius:16px;
-      padding:10px 12px;
-      font-size:22px;
-      font-weight:800;
-      text-align:center;
-      background:#fcfcff;
-      color:var(--ink);
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    .pills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:10px;
+    .pill {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 14px;
+      background: #eef2ff;
+      font-weight: bold;
+      font-size: 15px;
     }
 
-    .pill{
-      border:none;
-      border-radius:999px;
-      padding:12px 14px;
-      font-size:15px;
-      font-weight:800;
-      background:#eef2ff;
-      color:#33425e;
-      cursor:pointer;
+    .pill.active {
+      background: #6f5cff;
+      color: white;
     }
 
-    .pill.active{
-      background:var(--primary);
-      color:white;
+    .taskType {
+      cursor: pointer;
     }
 
-    .rowBetween{
-      display:flex;
-      gap:10px;
-      justify-content:space-between;
-      align-items:center;
-      flex-wrap:wrap;
-      margin-top:10px;
+    .taskTag {
+      display: inline-block;
+      background: #eef2ff;
+      color: #40506f;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 12px;
     }
 
-    .taskWrap{
-      text-align:center;
+    .taskBox {
+      text-align: center;
     }
 
-    .typeTag{
-      display:inline-block;
-      padding:8px 12px;
-      border-radius:999px;
-      background:#eef2ff;
-      color:#40506f;
-      font-size:14px;
-      font-weight:800;
-      margin-bottom:12px;
+    .taskArea {
+      min-height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
 
-    .task{
-      min-height:130px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:8px 0;
+    .expr {
+      font-size: 52px;
+      font-weight: bold;
+      line-height: 1.2;
     }
 
-    .expr{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-wrap:wrap;
-      gap:10px;
-      font-size:clamp(34px,8vw,62px);
-      font-weight:900;
-      line-height:1.15;
+    .blank {
+      display: inline-block;
+      min-width: 110px;
+      min-height: 70px;
+      line-height: 70px;
+      border-radius: 16px;
+      border: 4px dashed #bcc7e8;
+      background: #fbfcff;
+      vertical-align: middle;
+      margin: 0 4px;
+      padding: 0 10px;
     }
 
-    .blank{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:110px;
-      min-height:74px;
-      border-radius:18px;
-      padding:0 14px;
-      border:4px dashed #bcc7e8;
-      background:#fbfcff;
-      color:#243147;
+    .filled {
+      border-style: solid;
+      border-color: #cad4f0;
     }
 
-    .blank.filled{
-      border-style:solid;
-      border-color:#cad4f0;
+    .good {
+      border-color: #18b368;
+      background: #edfff5;
+      color: #0f8b50;
     }
 
-    .blank.good{
-      border-color:var(--green);
-      background:#edfff5;
-      color:#0f8b50;
+    .bad {
+      border-color: #e34d4d;
+      background: #fff0f0;
+      color: #c63939;
     }
 
-    .blank.bad{
-      border-color:var(--red);
-      background:#fff0f0;
-      color:#c63939;
+    .relationDiff {
+      margin-top: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #275b98;
+      background: #eef6ff;
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
     }
 
-    .relationBox{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:8px;
+    .message {
+      min-height: 34px;
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      margin-top: 8px;
     }
 
-    .diffBadge{
-      min-width:66px;
-      min-height:40px;
-      padding:0 14px;
-      border-radius:999px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      background:#eef6ff;
-      color:#275b98;
-      font-size:22px;
-      font-weight:900;
-      box-shadow:inset 0 0 0 2px #cfe3ff;
+    .messageGood { color: #18b368; }
+    .messageBad { color: #e34d4d; }
+    .messageInfo { color: #3f7cff; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
     }
 
-    .message{
-      min-height:36px;
-      text-align:center;
-      font-size:26px;
-      font-weight:900;
-      margin-top:6px;
+    .bigBtn {
+      min-height: 60px;
+      border: none;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: bold;
     }
 
-    .message.good{ color:var(--green); }
-    .message.bad{ color:var(--red); }
-    .message.info{ color:var(--blue); }
-
-    .actions{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-top:8px;
+    .primaryBtn {
+      background: #6f5cff;
+      color: white;
     }
 
-    .bigBtn{
-      min-height:62px;
-      border:none;
-      border-radius:18px;
-      font-size:24px;
-      font-weight:900;
-      cursor:pointer;
+    .yellowBtn {
+      background: #ffd84d;
+      color: #2f2a14;
     }
 
-    .primaryBtn{
-      background:var(--primary);
-      color:white;
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
     }
 
-    .yellowBtn{
-      background:var(--yellow);
-      color:#2f2a14;
+    .key {
+      min-height: 74px;
+      border: none;
+      border-radius: 16px;
+      font-size: 30px;
+      font-weight: bold;
+      background: #f5f7ff;
+      box-shadow: inset 0 0 0 2px #dde4ff;
     }
 
-    .numpad{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
-      margin-top:12px;
+    .keyAction {
+      background: #eaf6ff;
+      color: #245f9d;
+      font-size: 22px;
     }
 
-    .key{
-      min-height:74px;
-      border:none;
-      border-radius:18px;
-      font-size:30px;
-      font-weight:900;
-      background:#f5f7ff;
-      color:#2b3751;
-      box-shadow:inset 0 0 0 2px #dde4ff;
-      cursor:pointer;
+    .keyNeg {
+      background: #fff7ea;
+      color: #7b5d17;
     }
 
-    .key.action{
-      background:#eaf6ff;
-      color:#245f9d;
-      box-shadow:inset 0 0 0 2px #cde5ff;
-      font-size:22px;
+    .wide {
+      grid-column: span 2;
     }
 
-    .key.neg{
-      background:#fff7ea;
-      color:#7b5d17;
-      box-shadow:inset 0 0 0 2px #ffe0a6;
+    .hint {
+      margin-top: 8px;
+      text-align: center;
+      color: #667085;
+      font-size: 14px;
     }
 
-    .key.wide{
-      grid-column:span 2;
+    .reward {
+      display: none;
+      text-align: center;
+      background: linear-gradient(#fffbe8, #fff4c9);
+      border-radius: 20px;
+      padding: 16px;
     }
 
-    .hint{
-      margin-top:8px;
-      text-align:center;
-      font-size:14px;
-      color:var(--muted);
+    .rewardTitle {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 6px;
     }
 
-    .reward{
-      display:none;
-      text-align:center;
-      background:linear-gradient(180deg,#fffbe8,#fff4c9);
-      border-radius:22px;
-      padding:16px;
-      box-shadow:inset 0 0 0 2px #ffe28c;
+    .rewardText {
+      font-size: 17px;
+      margin-bottom: 12px;
+      color: #5c4a14;
     }
 
-    .reward.show{
-      display:block;
+    .sheetCard {
+      display: none;
     }
 
-    .rewardTitle{
-      font-size:24px;
-      font-weight:900;
-      margin-bottom:6px;
+    .sheetTitle {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
     }
 
-    .rewardText{
-      font-size:17px;
-      color:#5c4a14;
-      margin-bottom:12px;
-      line-height:1.4;
+    .sheetOutput {
+      white-space: pre-line;
+      font-size: 22px;
+      line-height: 1.8;
     }
 
-    .rewardActions{
-      display:flex;
-      justify-content:center;
-      flex-wrap:wrap;
-      gap:10px;
-    }
-
-    .rewardActions button{
-      min-height:52px;
-      padding:0 18px;
-      border:none;
-      border-radius:16px;
-      font-size:18px;
-      font-weight:900;
-      cursor:pointer;
-    }
-
-    .yesBtn{
-      background:var(--green);
-      color:white;
-    }
-
-    .noBtn{
-      background:#eef1f7;
-      color:#374151;
-    }
-
-    .sheetCard{
-      display:none;
-    }
-
-    .sheetTitle{
-      text-align:center;
-      font-size:24px;
-      font-weight:900;
-      margin-bottom:10px;
-    }
-
-    .sheetOutput{
-      white-space:pre-line;
-      font-size:22px;
-      line-height:1.8;
-    }
-
-    @media (max-width:640px){
-      .stats{
-        grid-template-columns:repeat(2,1fr);
+    @media (max-width: 640px) {
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
       }
 
-      .settings{
-        grid-template-columns:1fr;
+      .settings {
+        grid-template-columns: 1fr;
       }
 
-      .blank{
-        min-width:96px;
-        min-height:68px;
+      .expr {
+        font-size: 40px;
+      }
+
+      .blank {
+        min-width: 90px;
+        min-height: 62px;
+        line-height: 62px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div id="debugBox" class="debug"></div>
+  <div class="wrap">
+    <div id="debugBox" class="card debug"></div>
 
     <div class="card">
-      <h1>Matek gyakorló 2.2</h1>
-      <div class="sub">Több feladattípus, saját számbillentyűzet, jutalmazás</div>
+      <h1>Matek gyakorló 2.3</h1>
+      <div class="sub">Stabil egyszerű verzió</div>
 
       <div class="stats">
         <div class="stat">
@@ -440,91 +357,91 @@
 
     <div class="card">
       <div class="settings">
-        <div class="field">
+        <div>
           <label for="minInput">Legkisebb szám</label>
-          <input id="minInput" class="numInput" type="number" value="0" />
+          <input id="minInput" type="number" value="0">
         </div>
-        <div class="field">
+        <div>
           <label for="maxInput">Legnagyobb szám</label>
-          <input id="maxInput" class="numInput" type="number" value="9" />
+          <input id="maxInput" type="number" value="9">
         </div>
       </div>
 
-      <div class="pills">
-        <button class="pill rangePreset" data-min="0" data-max="9" type="button">0–9</button>
-        <button class="pill rangePreset" data-min="0" data-max="20" type="button">0–20</button>
-        <button class="pill rangePreset" data-min="-10" data-max="10" type="button">-10–10</button>
-        <button class="pill rangePreset" data-min="10" data-max="50" type="button">10–50</button>
+      <div class="row">
+        <button type="button" class="pill presetBtn" data-min="0" data-max="9">0–9</button>
+        <button type="button" class="pill presetBtn" data-min="0" data-max="20">0–20</button>
+        <button type="button" class="pill presetBtn" data-min="-10" data-max="10">-10–10</button>
+        <button type="button" class="pill presetBtn" data-min="10" data-max="50">10–50</button>
       </div>
 
-      <div class="rowBetween">
-        <div class="pills" style="margin-top:0;">
-          <button class="pill taskType active" data-type="addsub" type="button">+ / -</button>
-          <button class="pill taskType active" data-type="missing" type="button">Hiányzó tag</button>
-          <button class="pill taskType active" data-type="relation" type="button">Reláció</button>
-        </div>
-
-        <button id="applyRangeBtn" class="pill" type="button">Számkör frissítése</button>
+      <div class="row">
+        <button type="button" class="pill taskType active" data-type="addsub">+ / -</button>
+        <button type="button" class="pill taskType active" data-type="missing">Hiányzó tag</button>
+        <button type="button" class="pill taskType active" data-type="relation">Reláció</button>
+        <button type="button" class="pill" id="applyRangeBtn">Számkör frissítése</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="taskWrap">
-        <div class="typeTag" id="typeTag">Feladat</div>
-        <div class="task" id="taskArea"></div>
+      <div class="taskBox">
+        <div class="taskTag" id="taskTag">Feladat</div>
+        <div class="taskArea" id="taskArea">Betöltés...</div>
         <div class="message" id="message"></div>
 
         <div class="actions">
-          <button id="checkBtn" class="bigBtn primaryBtn" type="button">Ellenőrzés</button>
-          <button id="nextBtn" class="bigBtn yellowBtn" type="button">Következő</button>
+          <button type="button" class="bigBtn primaryBtn" id="checkBtn">Ellenőrzés</button>
+          <button type="button" class="bigBtn yellowBtn" id="nextBtn">Következő</button>
         </div>
 
         <div class="numpad">
-          <button class="key digitKey" data-key="1" type="button">1</button>
-          <button class="key digitKey" data-key="2" type="button">2</button>
-          <button class="key digitKey" data-key="3" type="button">3</button>
-          <button class="key digitKey" data-key="4" type="button">4</button>
-          <button class="key digitKey" data-key="5" type="button">5</button>
-          <button class="key digitKey" data-key="6" type="button">6</button>
-          <button class="key digitKey" data-key="7" type="button">7</button>
-          <button class="key digitKey" data-key="8" type="button">8</button>
-          <button class="key digitKey" data-key="9" type="button">9</button>
-          <button id="minusBtn" class="key neg" type="button">−</button>
-          <button class="key digitKey" data-key="0" type="button">0</button>
-          <button id="backBtn" class="key action" type="button">⌫</button>
-          <button id="clearBtn" class="key action wide" type="button">Törlés</button>
-          <button id="sheetBtn" class="key action" type="button">10 sor</button>
+          <button type="button" class="key digitBtn" data-key="1">1</button>
+          <button type="button" class="key digitBtn" data-key="2">2</button>
+          <button type="button" class="key digitBtn" data-key="3">3</button>
+          <button type="button" class="key digitBtn" data-key="4">4</button>
+          <button type="button" class="key digitBtn" data-key="5">5</button>
+          <button type="button" class="key digitBtn" data-key="6">6</button>
+          <button type="button" class="key digitBtn" data-key="7">7</button>
+          <button type="button" class="key digitBtn" data-key="8">8</button>
+          <button type="button" class="key digitBtn" data-key="9">9</button>
+          <button type="button" class="key keyNeg" id="minusBtn">−</button>
+          <button type="button" class="key digitBtn" data-key="0">0</button>
+          <button type="button" class="key keyAction" id="backBtn">⌫</button>
+          <button type="button" class="key keyAction wide" id="clearBtn">Törlés</button>
+          <button type="button" class="key keyAction" id="sheetBtn">10 sor</button>
         </div>
 
         <div class="hint">A számot az alsó gombokkal írd be.</div>
       </div>
     </div>
 
-    <div id="rewardBox" class="card reward">
+    <div class="card reward" id="rewardBox">
       <div class="rewardTitle">Ügyesen megy.</div>
-      <div id="rewardText" class="rewardText">Bővítsem a számkört?</div>
-      <div class="rewardActions">
-        <button id="expandYesBtn" class="yesBtn" type="button">Igen</button>
-        <button id="expandNoBtn" class="noBtn" type="button">Még ne</button>
+      <div class="rewardText" id="rewardText">Bővítsem a számkört?</div>
+      <div class="row" style="justify-content:center;">
+        <button type="button" class="pill active" id="expandYesBtn">Igen</button>
+        <button type="button" class="pill" id="expandNoBtn">Még ne</button>
       </div>
     </div>
 
-    <div id="sheetCard" class="card sheetCard">
+    <div class="card sheetCard" id="sheetCard">
       <div class="sheetTitle">Gyakorló feladatsor</div>
-      <div id="sheetOutput" class="sheetOutput"></div>
+      <div class="sheetOutput" id="sheetOutput"></div>
     </div>
   </div>
 
   <script>
-    window.onerror = function(msg, src, line, col, err){
-      var box = document.getElementById("debugBox");
-      if (box) {
-        box.style.display = "block";
-        box.textContent = "JS hiba: " + msg + "\nSor: " + line + "\nOszlop: " + col;
-      }
+    var debugBox = document.getElementById("debugBox");
+
+    function showDebug(msg) {
+      debugBox.style.display = "block";
+      debugBox.textContent = msg;
+    }
+
+    window.onerror = function(msg, src, line, col) {
+      showDebug("JS hiba: " + msg + "\nSor: " + line + "\nOszlop: " + col);
     };
 
-    (function () {
+    try {
       var state = {
         min: 0,
         max: 9,
@@ -542,90 +459,79 @@
         lastExpandScore: -1
       };
 
-      var els = {
-        scoreValue: document.getElementById("scoreValue"),
-        streakValue: document.getElementById("streakValue"),
-        starsValue: document.getElementById("starsValue"),
-        rangeValue: document.getElementById("rangeValue"),
-        minInput: document.getElementById("minInput"),
-        maxInput: document.getElementById("maxInput"),
-        typeTag: document.getElementById("typeTag"),
-        taskArea: document.getElementById("taskArea"),
-        message: document.getElementById("message"),
-        rewardBox: document.getElementById("rewardBox"),
-        rewardText: document.getElementById("rewardText"),
-        sheetCard: document.getElementById("sheetCard"),
-        sheetOutput: document.getElementById("sheetOutput"),
-        applyRangeBtn: document.getElementById("applyRangeBtn"),
-        checkBtn: document.getElementById("checkBtn"),
-        nextBtn: document.getElementById("nextBtn"),
-        minusBtn: document.getElementById("minusBtn"),
-        backBtn: document.getElementById("backBtn"),
-        clearBtn: document.getElementById("clearBtn"),
-        sheetBtn: document.getElementById("sheetBtn"),
-        expandYesBtn: document.getElementById("expandYesBtn"),
-        expandNoBtn: document.getElementById("expandNoBtn")
-      };
+      var scoreValue = document.getElementById("scoreValue");
+      var streakValue = document.getElementById("streakValue");
+      var starsValue = document.getElementById("starsValue");
+      var rangeValue = document.getElementById("rangeValue");
+      var minInput = document.getElementById("minInput");
+      var maxInput = document.getElementById("maxInput");
+      var taskTag = document.getElementById("taskTag");
+      var taskArea = document.getElementById("taskArea");
+      var message = document.getElementById("message");
+      var rewardBox = document.getElementById("rewardBox");
+      var rewardText = document.getElementById("rewardText");
+      var sheetCard = document.getElementById("sheetCard");
+      var sheetOutput = document.getElementById("sheetOutput");
 
-      function setMessage(text, kind) {
-        els.message.textContent = text || "";
-        els.message.className = "message" + (kind ? " " + kind : "");
+      function setMessage(text, cls) {
+        message.className = "message";
+        if (cls) {
+          message.className += " " + cls;
+        }
+        message.textContent = text || "";
       }
 
       function updateStats() {
-        els.scoreValue.textContent = String(state.score);
-        els.streakValue.textContent = String(state.streak);
-        els.starsValue.textContent = String(state.stars);
-        els.rangeValue.textContent = String(state.min) + "–" + String(state.max);
+        scoreValue.textContent = String(state.score);
+        streakValue.textContent = String(state.streak);
+        starsValue.textContent = String(state.stars);
+        rangeValue.textContent = String(state.min) + "–" + String(state.max);
       }
 
       function clampRange() {
-        var min = parseInt(els.minInput.value, 10);
-        var max = parseInt(els.maxInput.value, 10);
+        var min = parseInt(minInput.value, 10);
+        var max = parseInt(maxInput.value, 10);
 
         if (isNaN(min)) min = 0;
         if (isNaN(max)) max = 9;
-
         if (min > max) {
-          var temp = min;
+          var t = min;
           min = max;
-          max = temp;
+          max = t;
         }
 
         state.min = min;
         state.max = max;
-
-        els.minInput.value = String(min);
-        els.maxInput.value = String(max);
+        minInput.value = String(min);
+        maxInput.value = String(max);
       }
 
       function randInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
 
-      function getEnabledFamilies() {
-        var list = [];
-        if (state.enabledTypes.addsub) list.push("addsub");
-        if (state.enabledTypes.missing) list.push("missing");
-        if (state.enabledTypes.relation) list.push("relation");
-        if (list.length === 0) list.push("addsub");
-        return list;
+      function enabledList() {
+        var arr = [];
+        if (state.enabledTypes.addsub) arr.push("addsub");
+        if (state.enabledTypes.missing) arr.push("missing");
+        if (state.enabledTypes.relation) arr.push("relation");
+        if (arr.length === 0) arr.push("addsub");
+        return arr;
       }
 
       function pickFamily() {
-        var list = getEnabledFamilies();
-        return list[randInt(0, list.length - 1)];
+        var arr = enabledList();
+        return arr[randInt(0, arr.length - 1)];
       }
 
       function makeAddSubTask() {
         var tries = 0;
-        while (tries < 600) {
+        while (tries < 500) {
           tries++;
           var op = Math.random() < 0.5 ? "+" : "-";
           var a = randInt(state.min, state.max);
           var b = randInt(state.min, state.max);
           var result = op === "+" ? a + b : a - b;
-
           if (result >= state.min && result <= state.max) {
             return {
               family: "addsub",
@@ -637,26 +543,17 @@
             };
           }
         }
-
-        return {
-          family: "addsub",
-          label: "Összeadás",
-          a: 2,
-          b: 3,
-          op: "+",
-          answer: "5"
-        };
+        return { family: "addsub", label: "Összeadás", a: 2, b: 3, op: "+", answer: "5" };
       }
 
       function makeMissingTask() {
         var tries = 0;
-        while (tries < 600) {
+        while (tries < 500) {
           tries++;
           var op = Math.random() < 0.5 ? "+" : "-";
           var a = randInt(state.min, state.max);
           var b = randInt(state.min, state.max);
           var result = op === "+" ? a + b : a - b;
-
           if (result >= state.min && result <= state.max) {
             var leftBlank = Math.random() < 0.5;
             return {
@@ -671,44 +568,25 @@
             };
           }
         }
-
-        return {
-          family: "missing",
-          label: "Hiányzó tag",
-          leftBlank: false,
-          a: 7,
-          b: null,
-          op: "+",
-          result: 9,
-          answer: "2"
-        };
+        return { family: "missing", label: "Hiányzó tag", leftBlank: false, a: 7, b: null, op: "+", result: 9, answer: "2" };
       }
 
       function makeRelationTask() {
         var tries = 0;
-        while (tries < 600) {
+        while (tries < 500) {
           tries++;
-
-          var width = Math.abs(state.max - state.min);
-          var maxDiff = Math.max(1, Math.min(9, width));
-          var diff = randInt(1, maxDiff);
+          var diff = randInt(1, Math.max(1, Math.min(9, Math.abs(state.max - state.min))));
           var sign = Math.random() < 0.5 ? "<" : ">";
           var blankLeft = Math.random() < 0.5;
           var known = randInt(state.min, state.max);
           var unknown;
 
           if (blankLeft) {
-            if (sign === "<") {
-              unknown = known - diff;
-            } else {
-              unknown = known + diff;
-            }
+            if (sign === "<") unknown = known - diff;
+            else unknown = known + diff;
           } else {
-            if (sign === "<") {
-              unknown = known + diff;
-            } else {
-              unknown = known - diff;
-            }
+            if (sign === "<") unknown = known + diff;
+            else unknown = known - diff;
           }
 
           if (unknown >= state.min && unknown <= state.max) {
@@ -723,105 +601,83 @@
             };
           }
         }
-
-        return {
-          family: "relation",
-          label: "Reláció és különbség",
-          blankLeft: false,
-          known: 4,
-          sign: "<",
-          diff: 2,
-          answer: "6"
-        };
+        return { family: "relation", label: "Reláció és különbség", blankLeft: false, known: 4, sign: "<", diff: 2, answer: "6" };
       }
 
       function generateTask() {
         clampRange();
         var family = pickFamily();
-
         if (family === "addsub") return makeAddSubTask();
         if (family === "missing") return makeMissingTask();
         return makeRelationTask();
       }
 
-      function normalizeAnswer(str) {
-        if (str === "" || str === "-") return str;
-        return String(parseInt(str, 10));
+      function normalizeAnswer(s) {
+        if (s === "" || s === "-") return s;
+        return String(parseInt(s, 10));
       }
 
-      function getBlankClass() {
+      function blankClass() {
         if (!state.answer) return "blank";
         if (!state.checked) return "blank filled";
-
-        if (normalizeAnswer(state.answer) === state.task.answer) {
-          return "blank filled good";
-        } else {
-          return "blank filled bad";
-        }
+        if (normalizeAnswer(state.answer) === state.task.answer) return "blank filled good";
+        return "blank filled bad";
       }
 
-      function getBlankText() {
+      function blankText() {
         if (!state.answer) return "___";
         return state.answer.replace("-", "−");
       }
 
       function renderTask() {
         if (!state.task) {
-          els.taskArea.innerHTML = '<div class="expr"><span>Betöltés...</span></div>';
+          taskArea.innerHTML = "Nincs feladat";
           return;
         }
 
         var t = state.task;
-        var blankClass = getBlankClass();
-        var blankText = getBlankText();
+        var cls = blankClass();
+        var txt = blankText();
 
-        els.typeTag.textContent = t.label;
+        taskTag.textContent = t.label;
 
         if (t.family === "addsub") {
-          els.taskArea.innerHTML =
+          taskArea.innerHTML =
             '<div class="expr">' +
-              '<span>' + t.a + '</span>' +
-              '<span>' + (t.op === "-" ? "−" : "+") + '</span>' +
-              '<span>' + t.b + '</span>' +
-              '<span>=</span>' +
-              '<span class="' + blankClass + '">' + blankText + '</span>' +
+            '<span>' + t.a + '</span> ' +
+            '<span>' + (t.op === "-" ? "−" : "+") + '</span> ' +
+            '<span>' + t.b + '</span> ' +
+            '<span>=</span> ' +
+            '<span class="' + cls + '">' + txt + '</span>' +
             '</div>';
           return;
         }
 
         if (t.family === "missing") {
-          els.taskArea.innerHTML =
+          taskArea.innerHTML =
             '<div class="expr">' +
-              (t.leftBlank
-                ? '<span class="' + blankClass + '">' + blankText + '</span>'
-                : '<span>' + t.a + '</span>') +
-              '<span>' + (t.op === "-" ? "−" : "+") + '</span>' +
-              (t.leftBlank
-                ? '<span>' + t.b + '</span>'
-                : '<span class="' + blankClass + '">' + blankText + '</span>') +
-              '<span>=</span>' +
-              '<span>' + t.result + '</span>' +
+            (t.leftBlank ? '<span class="' + cls + '">' + txt + '</span>' : '<span>' + t.a + '</span>') +
+            ' <span>' + (t.op === "-" ? "−" : "+") + '</span> ' +
+            (t.leftBlank ? '<span>' + t.b + '</span>' : '<span class="' + cls + '">' + txt + '</span>') +
+            ' <span>=</span> ' +
+            '<span>' + t.result + '</span>' +
             '</div>';
           return;
         }
 
-        els.taskArea.innerHTML =
-          '<div class="relationBox">' +
-            '<div class="expr">' +
-              (t.blankLeft
-                ? '<span class="' + blankClass + '">' + blankText + '</span>'
-                : '<span>' + t.known + '</span>') +
-              '<span>' + t.sign + '</span>' +
-              (t.blankLeft
-                ? '<span>' + t.known + '</span>'
-                : '<span class="' + blankClass + '">' + blankText + '</span>') +
-            '</div>' +
-            '<div class="diffBadge">' + t.diff + '</div>' +
+        taskArea.innerHTML =
+          '<div>' +
+          '<div class="expr">' +
+          (t.blankLeft ? '<span class="' + cls + '">' + txt + '</span>' : '<span>' + t.known + '</span>') +
+          ' <span>' + t.sign + '</span> ' +
+          (t.blankLeft ? '<span>' + t.known + '</span>' : '<span class="' + cls + '">' + txt + '</span>') +
+          '</div>' +
+          '<div class="relationDiff">' + t.diff + '</div>' +
           '</div>';
       }
 
       function hideReward() {
-        els.rewardBox.classList.remove("show");
+        rewardBox.style.display = "none";
       }
 
       function maybeOfferExpansion() {
@@ -833,21 +689,16 @@
         var nextMin = state.min;
         var nextMax = state.max;
 
-        if (state.min >= 0) {
-          nextMax = state.max + 5;
-        } else {
+        if (state.min >= 0) nextMax = state.max + 5;
+        else {
           nextMin = state.min - 5;
           nextMax = state.max + 5;
         }
 
-        els.rewardBox.setAttribute("data-next-min", String(nextMin));
-        els.rewardBox.setAttribute("data-next-max", String(nextMax));
-        els.rewardText.textContent =
-          "Szeretnéd bővíteni a számkört " +
-          state.min + "–" + state.max +
-          " helyett " + nextMin + "–" + nextMax +
-          " tartományra?";
-        els.rewardBox.classList.add("show");
+        rewardBox.setAttribute("data-next-min", String(nextMin));
+        rewardBox.setAttribute("data-next-max", String(nextMax));
+        rewardText.textContent = "Szeretnéd bővíteni a számkört " + state.min + "–" + state.max + " helyett " + nextMin + "–" + nextMax + " tartományra?";
+        rewardBox.style.display = "block";
       }
 
       function newTask() {
@@ -871,15 +722,9 @@
           return;
         }
 
-        if (!/^\d$/.test(ch)) return;
-
-        if (state.answer === "0") {
-          state.answer = ch;
-        } else if (state.answer === "-0") {
-          state.answer = "-" + ch;
-        } else {
-          state.answer += ch;
-        }
+        if (state.answer === "0") state.answer = ch;
+        else if (state.answer === "-0") state.answer = "-" + ch;
+        else state.answer += ch;
 
         state.answer = normalizeAnswer(state.answer);
         renderTask();
@@ -901,135 +746,124 @@
         if (state.checked) return;
 
         if (state.answer === "" || state.answer === "-") {
-          setMessage("Először írj be egy számot.", "info");
+          setMessage("Először írj be egy számot.", "messageInfo");
           return;
         }
 
         state.checked = true;
+
         var ok = normalizeAnswer(state.answer) === state.task.answer;
 
         if (ok) {
           state.score += 10;
           state.streak += 1;
-          if (state.streak % 3 === 0) {
-            state.stars += 1;
-          }
-          setMessage("Ügyes!", "good");
+          if (state.streak % 3 === 0) state.stars += 1;
+          setMessage("Ügyes!", "messageGood");
           maybeOfferExpansion();
         } else {
           state.streak = 0;
-          setMessage("Most nem jó. Helyes: " + state.task.answer.replace("-", "−"), "bad");
+          setMessage("Most nem jó. Helyes: " + state.task.answer.replace("-", "−"), "messageBad");
         }
 
         renderTask();
         updateStats();
       }
 
-      function applyRange() {
+      function setRange(min, max) {
+        minInput.value = String(min);
+        maxInput.value = String(max);
         clampRange();
         newTask();
       }
 
-      function setRange(min, max) {
-        els.minInput.value = String(min);
-        els.maxInput.value = String(max);
-        applyRange();
-      }
-
       function generatePracticeSheet() {
         var oldTask = state.task;
-        var lines = [];
+        var oldAnswer = state.answer;
+        var oldChecked = state.checked;
+        var arr = [];
         var i;
         var t;
 
         for (i = 1; i <= 10; i++) {
           t = generateTask();
-
           if (t.family === "addsub") {
-            lines.push(
-              i + ".   " + t.a + " " + (t.op === "-" ? "−" : "+") + " " + t.b + " = ____"
-            );
+            arr.push(i + ".   " + t.a + " " + (t.op === "-" ? "−" : "+") + " " + t.b + " = ____");
           } else if (t.family === "missing") {
-            lines.push(
-              i + ".   " +
-              (t.leftBlank ? "____" : String(t.a)) +
-              " " + (t.op === "-" ? "−" : "+") + " " +
-              (t.leftBlank ? String(t.b) : "____") +
-              " = " + t.result
-            );
+            arr.push(i + ".   " + (t.leftBlank ? "____" : t.a) + " " + (t.op === "-" ? "−" : "+") + " " + (t.leftBlank ? t.b : "____") + " = " + t.result);
           } else {
-            lines.push(
-              i + ".   " +
-              (t.blankLeft ? "____" : String(t.known)) +
-              " " + t.sign + " " +
-              (t.blankLeft ? String(t.known) : "____") +
-              "   (különbség: " + t.diff + ")"
-            );
+            arr.push(i + ".   " + (t.blankLeft ? "____" : t.known) + " " + t.sign + " " + (t.blankLeft ? t.known : "____") + "   (különbség: " + t.diff + ")");
           }
         }
 
-        els.sheetOutput.textContent = lines.join("\n");
-        els.sheetCard.style.display = "block";
+        sheetOutput.textContent = arr.join("\n");
+        sheetCard.style.display = "block";
 
         state.task = oldTask;
+        state.answer = oldAnswer;
+        state.checked = oldChecked;
         renderTask();
       }
 
-      function bindEvents() {
-        var digitButtons = document.querySelectorAll(".digitKey");
-        var i;
+      document.getElementById("applyRangeBtn").onclick = function() {
+        clampRange();
+        newTask();
+      };
 
-        for (i = 0; i < digitButtons.length; i++) {
-          digitButtons[i].addEventListener("click", function () {
-            addChar(this.getAttribute("data-key"));
-          });
-        }
+      document.getElementById("checkBtn").onclick = checkAnswer;
+      document.getElementById("nextBtn").onclick = newTask;
+      document.getElementById("minusBtn").onclick = function() { addChar("-"); };
+      document.getElementById("backBtn").onclick = backspace;
+      document.getElementById("clearBtn").onclick = clearAnswer;
+      document.getElementById("sheetBtn").onclick = generatePracticeSheet;
 
-        var typeButtons = document.querySelectorAll(".taskType");
-        for (i = 0; i < typeButtons.length; i++) {
-          typeButtons[i].addEventListener("click", function () {
-            var type = this.getAttribute("data-type");
-            state.enabledTypes[type] = !state.enabledTypes[type];
-            this.classList.toggle("active", state.enabledTypes[type]);
-            newTask();
-          });
-        }
+      document.getElementById("expandYesBtn").onclick = function() {
+        var nextMin = parseInt(rewardBox.getAttribute("data-next-min"), 10);
+        var nextMax = parseInt(rewardBox.getAttribute("data-next-max"), 10);
+        setRange(nextMin, nextMax);
+        setMessage("Új számkör beállítva.", "messageInfo");
+        hideReward();
+      };
 
-        var rangeButtons = document.querySelectorAll(".rangePreset");
-        for (i = 0; i < rangeButtons.length; i++) {
-          rangeButtons[i].addEventListener("click", function () {
-            var min = parseInt(this.getAttribute("data-min"), 10);
-            var max = parseInt(this.getAttribute("data-max"), 10);
-            setRange(min, max);
-          });
-        }
+      document.getElementById("expandNoBtn").onclick = function() {
+        hideReward();
+        setMessage("Marad a mostani számkör.", "messageInfo");
+      };
 
-        els.applyRangeBtn.addEventListener("click", applyRange);
-        els.checkBtn.addEventListener("click", checkAnswer);
-        els.nextBtn.addEventListener("click", newTask);
-        els.minusBtn.addEventListener("click", function () { addChar("-"); });
-        els.backBtn.addEventListener("click", backspace);
-        els.clearBtn.addEventListener("click", clearAnswer);
-        els.sheetBtn.addEventListener("click", generatePracticeSheet);
-
-        els.expandYesBtn.addEventListener("click", function () {
-          var nextMin = parseInt(els.rewardBox.getAttribute("data-next-min"), 10);
-          var nextMax = parseInt(els.rewardBox.getAttribute("data-next-max"), 10);
-          setRange(nextMin, nextMax);
-          setMessage("Új számkör beállítva.", "info");
-          hideReward();
-        });
-
-        els.expandNoBtn.addEventListener("click", function () {
-          hideReward();
-          setMessage("Marad a mostani számkör.", "info");
-        });
+      var presetBtns = document.getElementsByClassName("presetBtn");
+      var i;
+      for (i = 0; i < presetBtns.length; i++) {
+        presetBtns[i].onclick = function() {
+          setRange(
+            parseInt(this.getAttribute("data-min"), 10),
+            parseInt(this.getAttribute("data-max"), 10)
+          );
+        };
       }
 
-      bindEvents();
+      var taskTypeBtns = document.getElementsByClassName("taskType");
+      for (i = 0; i < taskTypeBtns.length; i++) {
+        taskTypeBtns[i].onclick = function() {
+          var type = this.getAttribute("data-type");
+          state.enabledTypes[type] = !state.enabledTypes[type];
+          if (state.enabledTypes[type]) this.classList.add("active");
+          else this.classList.remove("active");
+          newTask();
+        };
+      }
+
+      var digitBtns = document.getElementsByClassName("digitBtn");
+      for (i = 0; i < digitBtns.length; i++) {
+        digitBtns[i].onclick = function() {
+          addChar(this.getAttribute("data-key"));
+        };
+      }
+
+      clampRange();
       updateStats();
       newTask();
-    })();
+    } catch (e) {
+      showDebug("INIT HIBA:\n" + e.message);
+    }
   </script>
 </body>
 </html>
