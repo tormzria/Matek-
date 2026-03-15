@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Matek gyakorló 2.0</title>
+  <style>
+    :root{
+      --bg: #f6f3ff;
+      --card: #ffffff;
+      --ink: #1f2430;
+      --muted: #667085;
+      --primary: #6f5cff;
+      --primary-2: #8b7bff;
+      --yellow: #ffd84d;
+      --green: #18b368;
+      --red: #e34d4d;
+      --blue: #4ea8ff;
+      --shadow: 0 14px 36px rgba(45, 33, 107, 0.14);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8f6ff 0%, #eef5ff 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app{
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+      padding-bottom: 18px;
+    }
+
+    .card{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    h1{
+      margin: 0 0 8px;
+      font-size: 30px;
+      text-align: center;
+    }
+
+    .sub{
+      text-align: center;
+      color: var(--muted);
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .stats{
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat{
+      background: #f7f8ff;
+      border-radius: 18px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    .stat .v{
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .stat .l{
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .settings{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field label{
+      display:block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .boxRow{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .numInput{
+      width:100%;
+      min-height: 52px;
+      border: 2px solid #d8dff8;
+      border-radius: 16px;
+      font-size: 22px;
+      font-weight: 700;
+      text-align:center;
+      padding: 8px 12px;
+      background: #fcfcff;
+    }
+
+    .smallBtns{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button{
+      border:none;
+      border-radius: 18px;
+      cursor:pointer;
+      font-weight: 700;
+    }
+
+    .pill{
+      padding: 12px 14px;
+      font-size: 15px;
+      background: #eef2ff;
+      color: #324055;
+    }
+
+    .pill.active{
+      background: var(--primary);
+      color: white;
+    }
+
+    .taskWrap{
+      text-align:center;
+    }
+
+    .typeTag{
+      display:inline-block;
+      background:#eef2ff;
+      color:#415173;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:14px;
+      font-weight:700;
+      margin-bottom: 10px;
+    }
+
+    .task{
+      min-height: 126px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .expr{
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 800;
+      line-height: 1.15;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap: 10px;
+    }
+
+    .blank{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 110px;
+      min-height: 72px;
+      padding: 0 14px;
+      border-radius: 18px;
+      border: 4px dashed #bfc8ea;
+      background: #fbfcff;
+      color: #243147;
+    }
+
+    .blank.filled{
+      border-style: solid;
+      border-color: #cfd6f3;
+    }
+
+    .blank.good{
+      border-color: var(--green);
+      background: #ebfff4;
+      color: #0f8b50;
+    }
+
+    .blank.bad{
+      border-color: var(--red);
+      background: #fff1f1;
+      color: #c33b3b;
+    }
+
+    .ghost{
+      color:#b0bad4;
+    }
+
+    .relBox{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+    }
+
+    .diffBadge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 60px;
+      min-height: 38px;
+      padding: 0 12px;
+      background: #eef6ff;
+      color: #275c96;
+      border-radius: 999px;
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 2px #cfe4ff;
+    }
+
+    .msg{
+      min-height: 36px;
+      font-size: 26px;
+      font-weight: 800;
+      text-align:center;
+    }
+
+    .msg.good{ color: var(--green); }
+    .msg.bad{ color: var(--red); }
+    .msg.info{ color: #3867c8; }
+
+    .actions{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .btnPrimary{
+      min-height: 62px;
+      font-size: 24px;
+      background: var(--primary);
+      color:white;
+    }
+
+    .btnYellow{
+      min-height: 62px;
+      font-size: 24px;
+      background: var(--yellow);
+      color:#2e2a14;
+    }
+
+    .numpad{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .key{
+      min-height: 72px;
+      font-size: 30px;
+      background: #f5f7ff;
+      color: #2a3550;
+      box-shadow: inset 0 0 0 2px #dde4ff;
+    }
+
+    .key.wide{
+      grid-column: span 2;
+    }
+
+    .key.action{
+      background: #eaf6ff;
+      box-shadow: inset 0 0 0 2px #cde5ff;
+      color:#245f9d;
+      font-size: 22px;
+    }
+
+    .key.neg{
+      background: #fff7ea;
+      box-shadow: inset 0 0 0 2px #ffe0a6;
+      color:#7e5d18;
+      font-size: 28px;
+    }
+
+    .hint{
+      margin-top: 8px;
+      text-align:center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .reward{
+      display:none;
+      text-align:center;
+      background: linear-gradient(180deg, #fffbe8 0%, #fff4c9 100%);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: inset 0 0 0 2px #ffe28c;
+    }
+
+    .reward.show{ display:block; }
+
+    .rewardTitle{
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .rewardText{
+      font-size: 17px;
+      color:#5b4a15;
+      margin-bottom: 12px;
+    }
+
+    .rewardActions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    .rewardActions button{
+      min-height: 52px;
+      padding: 0 18px;
+      font-size: 18px;
+    }
+
+    .btnYes{
+      background: var(--green);
+      color:white;
+    }
+
+    .btnNo{
+      background: #f0f2f8;
+      color:#374151;
+    }
+
+    .footerRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 8px;
+    }
+
+    .toggleRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 640px){
+      .stats{
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .settings{
+        grid-template-columns: 1fr;
+      }
+      .blank{
+        min-width: 96px;
+        min-height: 68px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <h1>Matek gyakorló 2.0</h1>
+      <div class="sub">Több feladattípus, saját számbillentyűzet, jutalmak és bővíthető számkör</div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="v" id="scoreValue">0</div>
+          <div class="l">Pont</div>
+        </div>
+        <div class="stat">
+          <div class="v" id="streakValue">0</div>
+          <div class="l">Sorozat</div>
+        </div>
+        <div class="stat">
+          <div class="v" id="starsValue">0</div>
+          <div class="l">Csillag</div>
+        </div>
+        <div class="stat">
+          <div class="v" id="accValue">0%</div>
+          <div class="l">Pontosság</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="settings">
+        <div class="field">
+          <label>Legkisebb szám</label>
+          <input id="minInput" class="numInput" type="number" value="0">
+        </div>
+        <div class="field">
+          <label>Legnagyobb szám</label>
+          <input id="maxInput" class="numInput" type="number" value="9">
+        </div>
+      </div>
+
+      <div class="smallBtns">
+        <button class="pill" data-range="0,9">0–9</button>
+        <button class="pill" data-range="0,20">0–20</button>
+        <button class="pill" data-range="-10,10">-10–10</button>
+        <button class="pill" data-range="10,50">10–50</button>
+      </div>
+
+      <div class="footerRow">
+        <div class="toggleRow">
+          <button class="pill active typeToggle" data-type="addsub">+ / -</button>
+          <button class="pill active typeToggle" data-type="missing">Hiányzó tag</button>
+          <button class="pill active typeToggle" data-type="relation">Reláció</button>
+        </div>
+        <button class="pill" id="applyRangeBtn">Számkör frissítése</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="taskWrap">
+        <div class="typeTag" id="typeTag">Összeadás / kivonás</div>
+        <div class="task" id="taskArea"></div>
+        <div class="msg" id="message"></div>
+
+        <div class="actions">
+          <button class="btnPrimary" id="checkBtn">Ellenőrzés</button>
+          <button class="btnYellow" id="nextBtn">Következő</button>
+        </div>
+
+        <div class="numpad">
+          <button class="key" data-key="1">1</button>
+          <button class="key" data-key="2">2</button>
+          <button class="key" data-key="3">3</button>
+          <button class="key" data-key="4">4</button>
+          <button class="key" data-key="5">5</button>
+          <button class="key" data-key="6">6</button>
+          <button class="key" data-key="7">7</button>
+          <button class="key" data-key="8">8</button>
+          <button class="key" data-key="9">9</button>
+          <button class="key neg" data-key="-">−</button>
+          <button class="key" data-key="0">0</button>
+          <button class="key action" id="backBtn">⌫</button>
+          <button class="key wide action" id="clearBtn">Törlés</button>
+          <button class="key action" id="sheetBtn">10 feladatos sor</button>
+        </div>
+
+        <div class="hint">A rendszerbillentyűzet helyett ezeket a gombokat használd.</div>
+      </div>
+    </div>
+
+    <div class="card reward" id="rewardBox">
+      <div class="rewardTitle">Ügyesen megy.</div>
+      <div class="rewardText" id="rewardText">Szeretnéd bővíteni a számkört?</div>
+      <div class="rewardActions">
+        <button class="btnYes" id="expandYesBtn">Igen, bővítsük</button>
+        <button class="btnNo" id="expandNoBtn">Most még ne</button>
+      </div>
+    </div>
+
+    <div class="card" id="sheetCard" style="display:none;">
+      <div class="rewardTitle" style="text-align:center;">Gyakorló feladatsor</div>
+      <div id="sheetOutput" style="white-space:pre-line;font-size:22px;line-height:1.8;"></div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      min: 0,
+      max: 9,
+      score: 0,
+      streak: 0,
+      stars: 0,
+      correctCount: 0,
+      totalChecks: 0,
+      answer: "",
+      checked: false,
+      task: null,
+      enabledTypes: {
+        addsub: true,
+        missing: true,
+        relation: true
+      },
+      lastExpandPromptAtScore: -1
+    };
+
+    const els = {
+      minInput: document.getElementById("minInput"),
+      maxInput: document.getElementById("maxInput"),
+      applyRangeBtn: document.getElementById("applyRangeBtn"),
+      taskArea: document.getElementById("taskArea"),
+      typeTag: document.getElementById("typeTag"),
+      message: document.getElementById("message"),
+      scoreValue: document.getElementById("scoreValue"),
+      streakValue: document.getElementById("streakValue"),
+      starsValue: document.getElementById("starsValue"),
+      accValue: document.getElementById("accValue"),
+      rewardBox: document.getElementById("rewardBox"),
+      rewardText: document.getElementById("rewardText"),
+      expandYesBtn: document.getElementById("expandYesBtn"),
+      expandNoBtn: document.getElementById("expandNoBtn"),
+      sheetBtn: document.getElementById("sheetBtn"),
+      sheetCard: document.getElementById("sheetCard"),
+      sheetOutput: document.getElementById("sheetOutput"),
+      checkBtn: document.getElementById("checkBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      backBtn: document.getElementById("backBtn"),
+      clearBtn: document.getElementById("clearBtn")
+    };
+
+    function randInt(min, max){
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function clampRange(){
+      let min = parseInt(els.minInput.value, 10);
+      let max = parseInt(els.maxInput.value, 10);
+      if (Number.isNaN(min)) min = 0;
+      if (Number.isNaN(max)) max = 9;
+      if (min > max) [min, max] = [max, min];
+      state.min = min;
+      state.max = max;
+      els.minInput.value = min;
+      els.maxInput.value = max;
+    }
+
+    function updateStats(){
+      els.scoreValue.textContent = state.score;
+      els.streakValue.textContent = state.streak;
+      els.starsValue.textContent = state.stars;
+      const acc = state.totalChecks === 0 ? 0 : Math.round((state.correctCount / state.totalChecks) * 100);
+      els.accValue.textContent = acc + "%";
+    }
+
+    function getEnabledTaskPools(){
+      const pools = [];
+      if (state.enabledTypes.addsub) pools.push("addsub");
+      if (state.enabledTypes.missing) pools.push("missing");
+      if (state.enabledTypes.relation) pools.push("relation");
+      return pools.length ? pools : ["addsub"];
+    }
+
+    function pickTaskFamily(){
+      const pools = getEnabledTaskPools();
+      return pools[randInt(0, pools.length - 1)];
+    }
+
+    function makeAddSubTask(){
+      let op = Math.random() < 0.5 ? "+" : "-";
+      let a, b, result;
+      let tries = 0;
+
+      while (true){
+        tries++;
+        a = randInt(state.min, state.max);
+        b = randInt(state.min, state.max);
+        result = op === "+" ? a + b : a - b;
+
+        if (result >= state.min && result <= state.max) {
+          return {
+            family: "addsub",
+            label: op === "+" ? "Összeadás" : "Kivonás",
+            a, b, op,
+            answer: String(result),
+            renderMode: "resultBlank"
+          };
+        }
+
+        if (tries > 600){
+          op = "+";
+          a = randInt(0, 9);
+          b = randInt(0, 9);
+          result = a + b;
+          return {
+            family: "addsub",
+            label: "Összeadás",
+            a, b, op,
+            answer: String(result),
+            renderMode: "resultBlank"
+          };
+        }
+      }
+    }
+
+    function makeMissingTask(){
+      const variant = Math.random() < 0.5 ? "add" : "sub";
+      let tries = 0;
+
+      while (true){
+        tries++;
+
+        if (variant === "add"){
+          const a = randInt(state.min, state.max);
+          const b = randInt(state.min, state.max);
+          const result = a + b;
+          if (result >= state.min && result <= state.max){
+            const blankLeft = Math.random() < 0.5;
+            return blankLeft
+              ? {
+                  family: "missing",
+                  label: "Hiányzó tag",
+                  leftBlank: true,
+                  a: null,
+                  b,
+                  op: "+",
+                  result,
+                  answer: String(a)
+                }
+              : {
+                  family: "missing",
+                  label: "Hiányzó tag",
+                  leftBlank: false,
+                  a,
+                  b: null,
+                  op: "+",
+                  result,
+                  answer: String(b)
+                };
+          }
+        } else {
+          const a = randInt(state.min, state.max);
+          const b = randInt(state.min, state.max);
+          const result = a - b;
+          if (result >= state.min && result <= state.max){
+            const blankLeft = Math.random() < 0.5;
+            if (blankLeft){
+              return {
+                family: "missing",
+                label: "Hiányzó szám",
+                leftBlank: true,
+                a: null,
+                b,
+                op: "-",
+                result,
+                answer: String(a)
+              };
+            } else {
+              return {
+                family: "missing",
+                label: "Hiányzó szám",
+                leftBlank: false,
+                a,
+                b: null,
+                op: "-",
+                result,
+                answer: String(b)
+              };
+            }
+          }
+        }
+
+        if (tries > 700){
+          return {
+            family: "missing",
+            label: "Hiányzó tag",
+            leftBlank: false,
+            a: 7,
+            b: null,
+            op: "+",
+            result: 9,
+            answer: "2"
+          };
+        }
+      }
+    }
+
+    function makeRelationTask(){
+      let tries = 0;
+
+      while (true){
+        tries++;
+        const diff = randInt(1, Math.max(1, Math.min(9, Math.abs(state.max - state.min))));
+        const sign = Math.random() < 0.5 ? "<" : ">";
+        const blankLeft = Math.random() < 0.5;
+
+        if (!blankLeft){
+          const known = randInt(state.min, state.max);
+          const unknown = sign === "<" ? known + diff : known - diff;
+          if (unknown >= state.min && unknown <= state.max){
+            return {
+              family: "relation",
+              label: "Reláció és különbség",
+              blankLeft: false,
+              known,
+              sign,
+              diff,
+              answer: String(unknown)
+            };
+          }
+        } else {
+          const known = randInt(state.min, state.max);
+          const unknown = sign === "<" ? known - diff : known + diff;
+          if (unknown >= state.min && unknown <= state.max){
+            return {
+              family: "relation",
+              label: "Reláció és különbség",
+              blankLeft: true,
+              known,
+              sign,
+              diff,
+              answer: String(unknown)
+            };
+          }
+        }
+
+        if (tries > 700){
+          return {
+            family: "relation",
+            label: "Reláció és különbség",
+            blankLeft: false,
+            known: 4,
+            sign: "<",
+            diff: 2,
+            answer: "6"
+          };
+        }
+      }
+    }
+
+    function generateTask(){
+      clampRange();
+      const family = pickTaskFamily();
+      if (family === "addsub") return makeAddSubTask();
+      if (family === "missing") return makeMissingTask();
+      return makeRelationTask();
+    }
+
+    function blankClass(){
+      if (!state.answer) return "blank";
+      if (!state.checked) return "blank filled";
+      return state.answer === state.task.answer ? "blank filled good" : "blank filled bad";
+    }
+
+    function blankText(){
+      return state.answer ? state.answer.replace("-", "−") : "___";
+    }
+
+    function renderTask(){
+      const t = state.task;
+      els.typeTag.textContent = t.label;
+      const cls = blankClass();
+      const ans = blankText();
+
+      if (t.family === "addsub"){
+        els.taskArea.innerHTML = `
+          <div class="expr">
+            <span>${t.a}</span>
+            <span>${t.op === "-" ? "−" : "+"}</span>
+            <span>${t.b}</span>
+            <span>=</span>
+            <span class="${cls}">${ans}</span>
+          </div>
+        `;
+        return;
+      }
+
+      if (t.family === "missing"){
+        els.taskArea.innerHTML = `
+          <div class="expr">
+            ${t.leftBlank ? `<span class="${cls}">${ans}</span>` : `<span>${t.a}</span>`}
+            <span>${t.op === "-" ? "−" : "+"}</span>
+            ${t.leftBlank ? `<span>${t.b}</span>` : `<span class="${cls}">${ans}</span>`}
+            <span>=</span>
+            <span>${t.result}</span>
+          </div>
+        `;
+        return;
+      }
+
+      els.taskArea.innerHTML = `
+        <div class="relBox">
+          <div class="expr">
+            ${t.blankLeft ? `
