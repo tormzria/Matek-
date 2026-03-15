@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matek gyakorló stabil</title>
+  <title>Matek gyakorló 3.0</title>
   <style>
     body {
       margin: 0;
@@ -16,6 +16,7 @@
     .wrap {
       max-width: 760px;
       margin: 0 auto;
+      position: relative;
     }
 
     .card {
@@ -51,7 +52,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       margin-top: 12px;
     }
@@ -64,12 +65,12 @@
     }
 
     .statValue {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: bold;
     }
 
     .statLabel {
-      font-size: 13px;
+      font-size: 12px;
       color: #667085;
       margin-top: 4px;
     }
@@ -96,6 +97,7 @@
       font-size: 22px;
       font-weight: bold;
       text-align: center;
+      box-sizing: border-box;
     }
 
     .row {
@@ -112,6 +114,7 @@
       background: #eef2ff;
       font-weight: bold;
       font-size: 15px;
+      cursor: pointer;
     }
 
     .pill.active {
@@ -139,11 +142,12 @@
     }
 
     .taskArea {
-      min-height: 130px;
+      min-height: 150px;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
+      flex-direction: column;
     }
 
     .expr {
@@ -163,6 +167,7 @@
       vertical-align: middle;
       margin: 0 4px;
       padding: 0 10px;
+      box-sizing: border-box;
     }
 
     .filled {
@@ -218,6 +223,7 @@
       border-radius: 16px;
       font-size: 24px;
       font-weight: bold;
+      cursor: pointer;
     }
 
     .primaryBtn {
@@ -245,6 +251,7 @@
       font-weight: bold;
       background: #f5f7ff;
       box-shadow: inset 0 0 0 2px #dde4ff;
+      cursor: pointer;
     }
 
     .keyAction {
@@ -306,6 +313,72 @@
       line-height: 1.8;
     }
 
+    .choiceWrap {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 340px;
+      margin-top: 16px;
+    }
+
+    .choiceBtn {
+      min-height: 60px;
+      border: none;
+      border-radius: 16px;
+      font-size: 28px;
+      font-weight: bold;
+      background: #f5f7ff;
+      box-shadow: inset 0 0 0 2px #dde4ff;
+      cursor: pointer;
+    }
+
+    .choiceBtn.good {
+      background: #edfff5;
+      color: #0f8b50;
+      box-shadow: inset 0 0 0 3px #18b368;
+    }
+
+    .choiceBtn.bad {
+      background: #fff0f0;
+      color: #c63939;
+      box-shadow: inset 0 0 0 3px #e34d4d;
+    }
+
+    .levelBadge {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #6f5cff;
+    }
+
+    .celebration {
+      display: none;
+      text-align: center;
+      background: linear-gradient(#f6efff, #efe7ff);
+      border-radius: 20px;
+      padding: 16px;
+    }
+
+    .celebrationTitle {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .celebrationText {
+      font-size: 18px;
+      color: #4d3d9a;
+    }
+
+    canvas#fireworksCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
     @media (max-width: 640px) {
       .stats {
         grid-template-columns: repeat(2, 1fr);
@@ -328,12 +401,14 @@
   </style>
 </head>
 <body>
+  <canvas id="fireworksCanvas"></canvas>
+
   <div class="wrap">
     <div id="debugBox" class="card debug"></div>
 
     <div class="card">
-      <h1>Matek gyakorló 2.3</h1>
-      <div class="sub">Stabil egyszerű verzió</div>
+      <h1>Matek gyakorló 3.0</h1>
+      <div class="sub">Új feladattípusokkal, szintekkel és ünnepléssel</div>
 
       <div class="stats">
         <div class="stat">
@@ -352,7 +427,13 @@
           <div class="statValue" id="rangeValue">0–9</div>
           <div class="statLabel">Számkör</div>
         </div>
+        <div class="stat">
+          <div class="statValue" id="levelValue">Újonc</div>
+          <div class="statLabel">Szint</div>
+        </div>
       </div>
+
+      <div class="levelBadge" id="levelBadge">Kezdésre kész</div>
     </div>
 
     <div class="card">
@@ -378,6 +459,8 @@
         <button type="button" class="pill taskType active" data-type="addsub">+ / -</button>
         <button type="button" class="pill taskType active" data-type="missing">Hiányzó tag</button>
         <button type="button" class="pill taskType active" data-type="relation">Reláció</button>
+        <button type="button" class="pill taskType active" data-type="choice">3 válasz</button>
+        <button type="button" class="pill taskType active" data-type="triple">3 elemű</button>
         <button type="button" class="pill" id="applyRangeBtn">Számkör frissítése</button>
       </div>
     </div>
@@ -393,7 +476,7 @@
           <button type="button" class="bigBtn yellowBtn" id="nextBtn">Következő</button>
         </div>
 
-        <div class="numpad">
+        <div class="numpad" id="numpad">
           <button type="button" class="key digitBtn" data-key="1">1</button>
           <button type="button" class="key digitBtn" data-key="2">2</button>
           <button type="button" class="key digitBtn" data-key="3">3</button>
@@ -410,7 +493,7 @@
           <button type="button" class="key keyAction" id="sheetBtn">10 sor</button>
         </div>
 
-        <div class="hint">A számot az alsó gombokkal írd be.</div>
+        <div class="hint" id="hintText">A számot az alsó gombokkal írd be.</div>
       </div>
     </div>
 
@@ -421,6 +504,11 @@
         <button type="button" class="pill active" id="expandYesBtn">Igen</button>
         <button type="button" class="pill" id="expandNoBtn">Még ne</button>
       </div>
+    </div>
+
+    <div class="card celebration" id="celebrationBox">
+      <div class="celebrationTitle" id="celebrationTitle">Szintlépés!</div>
+      <div class="celebrationText" id="celebrationText">Folytasd tovább.</div>
     </div>
 
     <div class="card sheetCard" id="sheetCard">
@@ -454,15 +542,22 @@
         enabledTypes: {
           addsub: true,
           missing: true,
-          relation: true
+          relation: true,
+          choice: true,
+          triple: true
         },
-        lastExpandScore: -1
+        lastExpandScore: -1,
+        correctTotal: 0,
+        lastLevelName: "Újonc",
+        selectedChoice: null
       };
 
       var scoreValue = document.getElementById("scoreValue");
       var streakValue = document.getElementById("streakValue");
       var starsValue = document.getElementById("starsValue");
       var rangeValue = document.getElementById("rangeValue");
+      var levelValue = document.getElementById("levelValue");
+      var levelBadge = document.getElementById("levelBadge");
       var minInput = document.getElementById("minInput");
       var maxInput = document.getElementById("maxInput");
       var taskTag = document.getElementById("taskTag");
@@ -472,6 +567,11 @@
       var rewardText = document.getElementById("rewardText");
       var sheetCard = document.getElementById("sheetCard");
       var sheetOutput = document.getElementById("sheetOutput");
+      var numpad = document.getElementById("numpad");
+      var hintText = document.getElementById("hintText");
+      var celebrationBox = document.getElementById("celebrationBox");
+      var celebrationTitle = document.getElementById("celebrationTitle");
+      var celebrationText = document.getElementById("celebrationText");
 
       function setMessage(text, cls) {
         message.className = "message";
@@ -479,13 +579,6 @@
           message.className += " " + cls;
         }
         message.textContent = text || "";
-      }
-
-      function updateStats() {
-        scoreValue.textContent = String(state.score);
-        streakValue.textContent = String(state.streak);
-        starsValue.textContent = String(state.stars);
-        rangeValue.textContent = String(state.min) + "–" + String(state.max);
       }
 
       function clampRange() {
@@ -510,11 +603,25 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
 
+      function shuffle(arr) {
+        var a = arr.slice();
+        var i, j, t;
+        for (i = a.length - 1; i > 0; i--) {
+          j = Math.floor(Math.random() * (i + 1));
+          t = a[i];
+          a[i] = a[j];
+          a[j] = t;
+        }
+        return a;
+      }
+
       function enabledList() {
         var arr = [];
         if (state.enabledTypes.addsub) arr.push("addsub");
         if (state.enabledTypes.missing) arr.push("missing");
         if (state.enabledTypes.relation) arr.push("relation");
+        if (state.enabledTypes.choice) arr.push("choice");
+        if (state.enabledTypes.triple) arr.push("triple");
         if (arr.length === 0) arr.push("addsub");
         return arr;
       }
@@ -522,6 +629,57 @@
       function pickFamily() {
         var arr = enabledList();
         return arr[randInt(0, arr.length - 1)];
+      }
+
+      function getLevelInfo(correctTotal) {
+        if (correctTotal >= 50) {
+          return { name: "Mágusmester", nextAt: null };
+        }
+        if (correctTotal >= 25) {
+          return { name: "Számmester", nextAt: 50 };
+        }
+        if (correctTotal >= 10) {
+          return { name: "Matekmágus", nextAt: 25 };
+        }
+        if (correctTotal >= 5) {
+          return { name: "Minimágus", nextAt: 10 };
+        }
+        return { name: "Újonc", nextAt: 5 };
+      }
+
+      function updateStats() {
+        var level = getLevelInfo(state.correctTotal);
+        scoreValue.textContent = String(state.score);
+        streakValue.textContent = String(state.streak);
+        starsValue.textContent = String(state.stars);
+        rangeValue.textContent = String(state.min) + "–" + String(state.max);
+        levelValue.textContent = level.name;
+
+        if (level.nextAt) {
+          levelBadge.textContent = level.name + " • következő szint: " + level.nextAt + " helyes";
+        } else {
+          levelBadge.textContent = level.name + " • elérted a legmagasabb szintet";
+        }
+      }
+
+      function maybeLevelUp() {
+        var level = getLevelInfo(state.correctTotal);
+        if (level.name !== state.lastLevelName) {
+          state.lastLevelName = level.name;
+          celebrationTitle.textContent = "Szintlépés!";
+          celebrationText.textContent = "Új szinted: " + level.name;
+          celebrationBox.style.display = "block";
+          startFireworks();
+        }
+      }
+
+      function maybeCelebrateFive() {
+        if (state.correctTotal > 0 && state.correctTotal % 5 === 0) {
+          celebrationTitle.textContent = "Ünneplés!";
+          celebrationText.textContent = "Már " + state.correctTotal + " helyes megoldásod van.";
+          celebrationBox.style.display = "block";
+          startFireworks();
+        }
       }
 
       function makeAddSubTask() {
@@ -604,12 +762,89 @@
         return { family: "relation", label: "Reláció és különbség", blankLeft: false, known: 4, sign: "<", diff: 2, answer: "6" };
       }
 
+      function makeChoiceTask() {
+        var baseTask = makeAddSubTask();
+        var correct = parseInt(baseTask.answer, 10);
+        var options = [correct];
+        var tries = 0;
+
+        while (options.length < 3 && tries < 100) {
+          tries++;
+          var delta = randInt(1, 6);
+          var candidate = correct + (Math.random() < 0.5 ? -delta : delta);
+          if (candidate >= state.min && candidate <= state.max && options.indexOf(candidate) === -1) {
+            options.push(candidate);
+          }
+        }
+
+        while (options.length < 3) {
+          var fallback = correct + options.length;
+          if (options.indexOf(fallback) === -1) options.push(fallback);
+        }
+
+        return {
+          family: "choice",
+          label: "Válaszd ki a jót",
+          a: baseTask.a,
+          b: baseTask.b,
+          op: baseTask.op,
+          answer: String(correct),
+          options: shuffle(options)
+        };
+      }
+
+      function makeTripleTask() {
+        var tries = 0;
+        while (tries < 700) {
+          tries++;
+          var a = randInt(state.min, state.max);
+          var b = randInt(state.min, state.max);
+          var c = randInt(state.min, state.max);
+          var op1 = Math.random() < 0.5 ? "+" : "-";
+          var op2 = Math.random() < 0.5 ? "+" : "-";
+          var result;
+
+          if (op1 === "+") result = a + b;
+          else result = a - b;
+
+          if (op2 === "+") result = result + c;
+          else result = result - c;
+
+          if (result >= state.min && result <= state.max) {
+            return {
+              family: "triple",
+              label: "3 elemű művelet",
+              a: a,
+              b: b,
+              c: c,
+              op1: op1,
+              op2: op2,
+              answer: String(result)
+            };
+          }
+        }
+
+        return {
+          family: "triple",
+          label: "3 elemű művelet",
+          a: 5,
+          b: 3,
+          c: 1,
+          op1: "+",
+          op2: "+",
+          answer: "9"
+        };
+      }
+
       function generateTask() {
         clampRange();
         var family = pickFamily();
+
         if (family === "addsub") return makeAddSubTask();
         if (family === "missing") return makeMissingTask();
-        return makeRelationTask();
+        if (family === "relation") return makeRelationTask();
+        if (family === "choice") return makeChoiceTask();
+        return makeTripleTask();
       }
 
       function normalizeAnswer(s) {
@@ -629,6 +864,33 @@
         return state.answer.replace("-", "−");
       }
 
+      function updateInputMode() {
+        if (!state.task || state.task.family === "choice") {
+          numpad.style.display = "none";
+          document.getElementById("checkBtn").style.display = "none";
+          hintText.textContent = "Koppints a helyes válaszra.";
+        } else {
+          numpad.style.display = "grid";
+          document.getElementById("checkBtn").style.display = "block";
+          hintText.textContent = "A számot az alsó gombokkal írd be.";
+        }
+      }
+
+      function renderChoiceButtons(options) {
+        var html = '<div class="choiceWrap">';
+        for (var i = 0; i < options.length; i++) {
+          var val = options[i];
+          var cls = "choiceBtn";
+          if (state.checked) {
+            if (String(val) === state.task.answer) cls += " good";
+            else if (state.selectedChoice !== null && String(val) === String(state.selectedChoice)) cls += " bad";
+          }
+          html += '<button type="button" class="' + cls + '" onclick="window.selectChoice(' + val + ')">' + String(val).replace("-", "−") + '</button>';
+        }
+        html += '</div>';
+        return html;
+      }
+
       function renderTask() {
         if (!state.task) {
           taskArea.innerHTML = "Nincs feladat";
@@ -640,6 +902,7 @@
         var txt = blankText();
 
         taskTag.textContent = t.label;
+        updateInputMode();
 
         if (t.family === "addsub") {
           taskArea.innerHTML =
@@ -665,15 +928,46 @@
           return;
         }
 
-        taskArea.innerHTML =
-          '<div>' +
-          '<div class="expr">' +
-          (t.blankLeft ? '<span class="' + cls + '">' + txt + '</span>' : '<span>' + t.known + '</span>') +
-          ' <span>' + t.sign + '</span> ' +
-          (t.blankLeft ? '<span>' + t.known + '</span>' : '<span class="' + cls + '">' + txt + '</span>') +
-          '</div>' +
-          '<div class="relationDiff">' + t.diff + '</div>' +
-          '</div>';
+        if (t.family === "relation") {
+          taskArea.innerHTML =
+            '<div>' +
+            '<div class="expr">' +
+            (t.blankLeft ? '<span class="' + cls + '">' + txt + '</span>' : '<span>' + t.known + '</span>') +
+            ' <span>' + t.sign + '</span> ' +
+            (t.blankLeft ? '<span>' + t.known + '</span>' : '<span class="' + cls + '">' + txt + '</span>') +
+            '</div>' +
+            '<div class="relationDiff">' + t.diff + '</div>' +
+            '</div>';
+          return;
+        }
+
+        if (t.family === "choice") {
+          taskArea.innerHTML =
+            '<div>' +
+            '<div class="expr">' +
+            '<span>' + t.a + '</span> ' +
+            '<span>' + (t.op === "-" ? "−" : "+") + '</span> ' +
+            '<span>' + t.b + '</span> ' +
+            '<span>=</span>' +
+            '</div>' +
+            renderChoiceButtons(t.options) +
+            '</div>';
+          return;
+        }
+
+        if (t.family === "triple") {
+          taskArea.innerHTML =
+            '<div class="expr">' +
+            '<span>' + t.a + '</span> ' +
+            '<span>' + (t.op1 === "-" ? "−" : "+") + '</span> ' +
+            '<span>' + t.b + '</span> ' +
+            '<span>' + (t.op2 === "-" ? "−" : "+") + '</span> ' +
+            '<span>' + t.c + '</span> ' +
+            '<span>=</span> ' +
+            '<span class="' + cls + '">' + txt + '</span>' +
+            '</div>';
+          return;
+        }
       }
 
       function hideReward() {
@@ -705,6 +999,7 @@
         state.task = generateTask();
         state.answer = "";
         state.checked = false;
+        state.selectedChoice = null;
         setMessage("", "");
         hideReward();
         renderTask();
@@ -713,6 +1008,7 @@
 
       function addChar(ch) {
         if (state.checked) return;
+        if (!state.task || state.task.family === "choice") return;
 
         if (ch === "-") {
           if (state.min < 0 && state.answer.length === 0) {
@@ -732,18 +1028,37 @@
 
       function backspace() {
         if (state.checked) return;
+        if (!state.task || state.task.family === "choice") return;
         state.answer = state.answer.slice(0, -1);
         renderTask();
       }
 
       function clearAnswer() {
         if (state.checked) return;
+        if (!state.task || state.task.family === "choice") return;
         state.answer = "";
         renderTask();
       }
 
+      function rewardCorrect() {
+        state.score += 10;
+        state.streak += 1;
+        state.correctTotal += 1;
+        if (state.streak % 3 === 0) state.stars += 1;
+
+        maybeLevelUp();
+        maybeCelebrateFive();
+        maybeOfferExpansion();
+      }
+
+      function rewardWrong() {
+        state.streak = 0;
+      }
+
       function checkAnswer() {
         if (state.checked) return;
+        if (!state.task) return;
+        if (state.task.family === "choice") return;
 
         if (state.answer === "" || state.answer === "-") {
           setMessage("Először írj be egy számot.", "messageInfo");
@@ -755,13 +1070,10 @@
         var ok = normalizeAnswer(state.answer) === state.task.answer;
 
         if (ok) {
-          state.score += 10;
-          state.streak += 1;
-          if (state.streak % 3 === 0) state.stars += 1;
+          rewardCorrect();
           setMessage("Ügyes!", "messageGood");
-          maybeOfferExpansion();
         } else {
-          state.streak = 0;
+          rewardWrong();
           setMessage("Most nem jó. Helyes: " + state.task.answer.replace("-", "−"), "messageBad");
         }
 
@@ -780,6 +1092,7 @@
         var oldTask = state.task;
         var oldAnswer = state.answer;
         var oldChecked = state.checked;
+        var oldSelectedChoice = state.selectedChoice;
         var arr = [];
         var i;
         var t;
@@ -790,8 +1103,12 @@
             arr.push(i + ".   " + t.a + " " + (t.op === "-" ? "−" : "+") + " " + t.b + " = ____");
           } else if (t.family === "missing") {
             arr.push(i + ".   " + (t.leftBlank ? "____" : t.a) + " " + (t.op === "-" ? "−" : "+") + " " + (t.leftBlank ? t.b : "____") + " = " + t.result);
-          } else {
+          } else if (t.family === "relation") {
             arr.push(i + ".   " + (t.blankLeft ? "____" : t.known) + " " + t.sign + " " + (t.blankLeft ? t.known : "____") + "   (különbség: " + t.diff + ")");
+          } else if (t.family === "choice") {
+            arr.push(i + ".   " + t.a + " " + (t.op === "-" ? "−" : "+") + " " + t.b + " =     lehetőségek: " + t.options.join(", "));
+          } else if (t.family === "triple") {
+            arr.push(i + ".   " + t.a + " " + (t.op1 === "-" ? "−" : "+") + " " + t.b + " " + (t.op2 === "-" ? "−" : "+") + " " + t.c + " = ____");
           }
         }
 
@@ -801,8 +1118,27 @@
         state.task = oldTask;
         state.answer = oldAnswer;
         state.checked = oldChecked;
+        state.selectedChoice = oldSelectedChoice;
         renderTask();
       }
+
+      window.selectChoice = function(value) {
+        if (!state.task || state.task.family !== "choice" || state.checked) return;
+
+        state.selectedChoice = value;
+        state.checked = true;
+
+        if (String(value) === state.task.answer) {
+          rewardCorrect();
+          setMessage("Ügyes!", "messageGood");
+        } else {
+          rewardWrong();
+          setMessage("Most nem jó. Helyes: " + state.task.answer.replace("-", "−"), "messageBad");
+        }
+
+        renderTask();
+        updateStats();
+      };
 
       document.getElementById("applyRangeBtn").onclick = function() {
         clampRange();
@@ -856,6 +1192,87 @@
         digitBtns[i].onclick = function() {
           addChar(this.getAttribute("data-key"));
         };
+      }
+
+      var canvas = document.getElementById("fireworksCanvas");
+      var ctx = canvas.getContext("2d");
+      var fireworks = [];
+      var fireworkRunning = false;
+      var fireworkEndTime = 0;
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      function createBurst(x, y) {
+        var parts = [];
+        for (var i = 0; i < 30; i++) {
+          parts.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            life: 60 + Math.random() * 20,
+            size: 2 + Math.random() * 3
+          });
+        }
+        fireworks.push(parts);
+      }
+
+      function startFireworks() {
+        resizeCanvas();
+        fireworkRunning = true;
+        fireworkEndTime = Date.now() + 1800;
+
+        createBurst(canvas.width * 0.3, canvas.height * 0.35);
+        createBurst(canvas.width * 0.7, canvas.height * 0.3);
+        createBurst(canvas.width * 0.5, canvas.height * 0.5);
+
+        requestAnimationFrame(animateFireworks);
+      }
+
+      function animateFireworks() {
+        if (!fireworkRunning) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var i = fireworks.length - 1; i >= 0; i--) {
+          var burst = fireworks[i];
+          for (var j = burst.length - 1; j >= 0; j--) {
+            var p = burst[j];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.06;
+            p.life -= 1;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(" +
+              (150 + Math.floor(Math.random() * 105)) + "," +
+              (100 + Math.floor(Math.random() * 155)) + "," +
+              (150 + Math.floor(Math.random() * 105)) + "," +
+              Math.max(0, p.life / 80) + ")";
+            ctx.fill();
+
+            if (p.life <= 0) {
+              burst.splice(j, 1);
+            }
+          }
+          if (burst.length === 0) {
+            fireworks.splice(i, 1);
+          }
+        }
+
+        if (Date.now() < fireworkEndTime || fireworks.length > 0) {
+          requestAnimationFrame(animateFireworks);
+        } else {
+          fireworkRunning = false;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
       }
 
       clampRange();
