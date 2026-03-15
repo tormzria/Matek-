@@ -557,4 +557,479 @@
         sheetCard: document.getElementById("sheetCard"),
         sheetOutput: document.getElementById("sheetOutput"),
         applyRangeBtn: document.getElementById("applyRangeBtn"),
-        checkBtn: document.getElementById("checkBtn
+        checkBtn: document.getElementById("checkBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        minusBtn: document.getElementById("minusBtn"),
+        backBtn: document.getElementById("backBtn"),
+        clearBtn: document.getElementById("clearBtn"),
+        sheetBtn: document.getElementById("sheetBtn"),
+        expandYesBtn: document.getElementById("expandYesBtn"),
+        expandNoBtn: document.getElementById("expandNoBtn")
+      };
+
+      function setMessage(text, kind) {
+        els.message.textContent = text || "";
+        els.message.className = "message" + (kind ? " " + kind : "");
+      }
+
+      function updateStats() {
+        els.scoreValue.textContent = String(state.score);
+        els.streakValue.textContent = String(state.streak);
+        els.starsValue.textContent = String(state.stars);
+        els.rangeValue.textContent = String(state.min) + "–" + String(state.max);
+      }
+
+      function clampRange() {
+        var min = parseInt(els.minInput.value, 10);
+        var max = parseInt(els.maxInput.value, 10);
+
+        if (isNaN(min)) min = 0;
+        if (isNaN(max)) max = 9;
+
+        if (min > max) {
+          var temp = min;
+          min = max;
+          max = temp;
+        }
+
+        state.min = min;
+        state.max = max;
+
+        els.minInput.value = String(min);
+        els.maxInput.value = String(max);
+      }
+
+      function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function getEnabledFamilies() {
+        var list = [];
+        if (state.enabledTypes.addsub) list.push("addsub");
+        if (state.enabledTypes.missing) list.push("missing");
+        if (state.enabledTypes.relation) list.push("relation");
+        if (list.length === 0) list.push("addsub");
+        return list;
+      }
+
+      function pickFamily() {
+        var list = getEnabledFamilies();
+        return list[randInt(0, list.length - 1)];
+      }
+
+      function makeAddSubTask() {
+        var tries = 0;
+        while (tries < 600) {
+          tries++;
+          var op = Math.random() < 0.5 ? "+" : "-";
+          var a = randInt(state.min, state.max);
+          var b = randInt(state.min, state.max);
+          var result = op === "+" ? a + b : a - b;
+
+          if (result >= state.min && result <= state.max) {
+            return {
+              family: "addsub",
+              label: op === "+" ? "Összeadás" : "Kivonás",
+              a: a,
+              b: b,
+              op: op,
+              answer: String(result)
+            };
+          }
+        }
+
+        return {
+          family: "addsub",
+          label: "Összeadás",
+          a: 2,
+          b: 3,
+          op: "+",
+          answer: "5"
+        };
+      }
+
+      function makeMissingTask() {
+        var tries = 0;
+        while (tries < 600) {
+          tries++;
+          var op = Math.random() < 0.5 ? "+" : "-";
+          var a = randInt(state.min, state.max);
+          var b = randInt(state.min, state.max);
+          var result = op === "+" ? a + b : a - b;
+
+          if (result >= state.min && result <= state.max) {
+            var leftBlank = Math.random() < 0.5;
+            return {
+              family: "missing",
+              label: "Hiányzó tag",
+              leftBlank: leftBlank,
+              a: leftBlank ? null : a,
+              b: leftBlank ? b : null,
+              op: op,
+              result: result,
+              answer: leftBlank ? String(a) : String(b)
+            };
+          }
+        }
+
+        return {
+          family: "missing",
+          label: "Hiányzó tag",
+          leftBlank: false,
+          a: 7,
+          b: null,
+          op: "+",
+          result: 9,
+          answer: "2"
+        };
+      }
+
+      function makeRelationTask() {
+        var tries = 0;
+        while (tries < 600) {
+          tries++;
+
+          var width = Math.abs(state.max - state.min);
+          var maxDiff = Math.max(1, Math.min(9, width));
+          var diff = randInt(1, maxDiff);
+          var sign = Math.random() < 0.5 ? "<" : ">";
+          var blankLeft = Math.random() < 0.5;
+          var known = randInt(state.min, state.max);
+          var unknown;
+
+          if (blankLeft) {
+            if (sign === "<") {
+              unknown = known - diff;
+            } else {
+              unknown = known + diff;
+            }
+          } else {
+            if (sign === "<") {
+              unknown = known + diff;
+            } else {
+              unknown = known - diff;
+            }
+          }
+
+          if (unknown >= state.min && unknown <= state.max) {
+            return {
+              family: "relation",
+              label: "Reláció és különbség",
+              blankLeft: blankLeft,
+              known: known,
+              sign: sign,
+              diff: diff,
+              answer: String(unknown)
+            };
+          }
+        }
+
+        return {
+          family: "relation",
+          label: "Reláció és különbség",
+          blankLeft: false,
+          known: 4,
+          sign: "<",
+          diff: 2,
+          answer: "6"
+        };
+      }
+
+      function generateTask() {
+        clampRange();
+        var family = pickFamily();
+
+        if (family === "addsub") return makeAddSubTask();
+        if (family === "missing") return makeMissingTask();
+        return makeRelationTask();
+      }
+
+      function normalizeAnswer(str) {
+        if (str === "" || str === "-") return str;
+        return String(parseInt(str, 10));
+      }
+
+      function getBlankClass() {
+        if (!state.answer) return "blank";
+        if (!state.checked) return "blank filled";
+
+        if (normalizeAnswer(state.answer) === state.task.answer) {
+          return "blank filled good";
+        } else {
+          return "blank filled bad";
+        }
+      }
+
+      function getBlankText() {
+        if (!state.answer) return "___";
+        return state.answer.replace("-", "−");
+      }
+
+      function renderTask() {
+        if (!state.task) {
+          els.taskArea.innerHTML = '<div class="expr"><span>Betöltés...</span></div>';
+          return;
+        }
+
+        var t = state.task;
+        var blankClass = getBlankClass();
+        var blankText = getBlankText();
+
+        els.typeTag.textContent = t.label;
+
+        if (t.family === "addsub") {
+          els.taskArea.innerHTML =
+            '<div class="expr">' +
+              '<span>' + t.a + '</span>' +
+              '<span>' + (t.op === "-" ? "−" : "+") + '</span>' +
+              '<span>' + t.b + '</span>' +
+              '<span>=</span>' +
+              '<span class="' + blankClass + '">' + blankText + '</span>' +
+            '</div>';
+          return;
+        }
+
+        if (t.family === "missing") {
+          els.taskArea.innerHTML =
+            '<div class="expr">' +
+              (t.leftBlank
+                ? '<span class="' + blankClass + '">' + blankText + '</span>'
+                : '<span>' + t.a + '</span>') +
+              '<span>' + (t.op === "-" ? "−" : "+") + '</span>' +
+              (t.leftBlank
+                ? '<span>' + t.b + '</span>'
+                : '<span class="' + blankClass + '">' + blankText + '</span>') +
+              '<span>=</span>' +
+              '<span>' + t.result + '</span>' +
+            '</div>';
+          return;
+        }
+
+        els.taskArea.innerHTML =
+          '<div class="relationBox">' +
+            '<div class="expr">' +
+              (t.blankLeft
+                ? '<span class="' + blankClass + '">' + blankText + '</span>'
+                : '<span>' + t.known + '</span>') +
+              '<span>' + t.sign + '</span>' +
+              (t.blankLeft
+                ? '<span>' + t.known + '</span>'
+                : '<span class="' + blankClass + '">' + blankText + '</span>') +
+            '</div>' +
+            '<div class="diffBadge">' + t.diff + '</div>' +
+          '</div>';
+      }
+
+      function hideReward() {
+        els.rewardBox.classList.remove("show");
+      }
+
+      function maybeOfferExpansion() {
+        if (state.streak < 5) return;
+        if (state.score === state.lastExpandScore) return;
+
+        state.lastExpandScore = state.score;
+
+        var nextMin = state.min;
+        var nextMax = state.max;
+
+        if (state.min >= 0) {
+          nextMax = state.max + 5;
+        } else {
+          nextMin = state.min - 5;
+          nextMax = state.max + 5;
+        }
+
+        els.rewardBox.setAttribute("data-next-min", String(nextMin));
+        els.rewardBox.setAttribute("data-next-max", String(nextMax));
+        els.rewardText.textContent =
+          "Szeretnéd bővíteni a számkört " +
+          state.min + "–" + state.max +
+          " helyett " + nextMin + "–" + nextMax +
+          " tartományra?";
+        els.rewardBox.classList.add("show");
+      }
+
+      function newTask() {
+        state.task = generateTask();
+        state.answer = "";
+        state.checked = false;
+        setMessage("", "");
+        hideReward();
+        renderTask();
+        updateStats();
+      }
+
+      function addChar(ch) {
+        if (state.checked) return;
+
+        if (ch === "-") {
+          if (state.min < 0 && state.answer.length === 0) {
+            state.answer = "-";
+            renderTask();
+          }
+          return;
+        }
+
+        if (!/^\d$/.test(ch)) return;
+
+        if (state.answer === "0") {
+          state.answer = ch;
+        } else if (state.answer === "-0") {
+          state.answer = "-" + ch;
+        } else {
+          state.answer += ch;
+        }
+
+        state.answer = normalizeAnswer(state.answer);
+        renderTask();
+      }
+
+      function backspace() {
+        if (state.checked) return;
+        state.answer = state.answer.slice(0, -1);
+        renderTask();
+      }
+
+      function clearAnswer() {
+        if (state.checked) return;
+        state.answer = "";
+        renderTask();
+      }
+
+      function checkAnswer() {
+        if (state.checked) return;
+
+        if (state.answer === "" || state.answer === "-") {
+          setMessage("Először írj be egy számot.", "info");
+          return;
+        }
+
+        state.checked = true;
+        var ok = normalizeAnswer(state.answer) === state.task.answer;
+
+        if (ok) {
+          state.score += 10;
+          state.streak += 1;
+          if (state.streak % 3 === 0) {
+            state.stars += 1;
+          }
+          setMessage("Ügyes!", "good");
+          maybeOfferExpansion();
+        } else {
+          state.streak = 0;
+          setMessage("Most nem jó. Helyes: " + state.task.answer.replace("-", "−"), "bad");
+        }
+
+        renderTask();
+        updateStats();
+      }
+
+      function applyRange() {
+        clampRange();
+        newTask();
+      }
+
+      function setRange(min, max) {
+        els.minInput.value = String(min);
+        els.maxInput.value = String(max);
+        applyRange();
+      }
+
+      function generatePracticeSheet() {
+        var oldTask = state.task;
+        var lines = [];
+        var i;
+        var t;
+
+        for (i = 1; i <= 10; i++) {
+          t = generateTask();
+
+          if (t.family === "addsub") {
+            lines.push(
+              i + ".   " + t.a + " " + (t.op === "-" ? "−" : "+") + " " + t.b + " = ____"
+            );
+          } else if (t.family === "missing") {
+            lines.push(
+              i + ".   " +
+              (t.leftBlank ? "____" : String(t.a)) +
+              " " + (t.op === "-" ? "−" : "+") + " " +
+              (t.leftBlank ? String(t.b) : "____") +
+              " = " + t.result
+            );
+          } else {
+            lines.push(
+              i + ".   " +
+              (t.blankLeft ? "____" : String(t.known)) +
+              " " + t.sign + " " +
+              (t.blankLeft ? String(t.known) : "____") +
+              "   (különbség: " + t.diff + ")"
+            );
+          }
+        }
+
+        els.sheetOutput.textContent = lines.join("\n");
+        els.sheetCard.style.display = "block";
+
+        state.task = oldTask;
+        renderTask();
+      }
+
+      function bindEvents() {
+        var digitButtons = document.querySelectorAll(".digitKey");
+        var i;
+
+        for (i = 0; i < digitButtons.length; i++) {
+          digitButtons[i].addEventListener("click", function () {
+            addChar(this.getAttribute("data-key"));
+          });
+        }
+
+        var typeButtons = document.querySelectorAll(".taskType");
+        for (i = 0; i < typeButtons.length; i++) {
+          typeButtons[i].addEventListener("click", function () {
+            var type = this.getAttribute("data-type");
+            state.enabledTypes[type] = !state.enabledTypes[type];
+            this.classList.toggle("active", state.enabledTypes[type]);
+            newTask();
+          });
+        }
+
+        var rangeButtons = document.querySelectorAll(".rangePreset");
+        for (i = 0; i < rangeButtons.length; i++) {
+          rangeButtons[i].addEventListener("click", function () {
+            var min = parseInt(this.getAttribute("data-min"), 10);
+            var max = parseInt(this.getAttribute("data-max"), 10);
+            setRange(min, max);
+          });
+        }
+
+        els.applyRangeBtn.addEventListener("click", applyRange);
+        els.checkBtn.addEventListener("click", checkAnswer);
+        els.nextBtn.addEventListener("click", newTask);
+        els.minusBtn.addEventListener("click", function () { addChar("-"); });
+        els.backBtn.addEventListener("click", backspace);
+        els.clearBtn.addEventListener("click", clearAnswer);
+        els.sheetBtn.addEventListener("click", generatePracticeSheet);
+
+        els.expandYesBtn.addEventListener("click", function () {
+          var nextMin = parseInt(els.rewardBox.getAttribute("data-next-min"), 10);
+          var nextMax = parseInt(els.rewardBox.getAttribute("data-next-max"), 10);
+          setRange(nextMin, nextMax);
+          setMessage("Új számkör beállítva.", "info");
+          hideReward();
+        });
+
+        els.expandNoBtn.addEventListener("click", function () {
+          hideReward();
+          setMessage("Marad a mostani számkör.", "info");
+        });
+      }
+
+      bindEvents();
+      updateStats();
+      newTask();
+    })();
+  </script>
+</body>
+</html>
