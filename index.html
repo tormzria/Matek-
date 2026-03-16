@@ -83,38 +83,6 @@
       color: #42506d;
     }
 
-    .progressWrap {
-      margin-top: 14px;
-    }
-
-    .progressTop {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: bold;
-      color: #5e6780;
-      margin-bottom: 8px;
-    }
-
-    .progressBarOuter {
-      width: 100%;
-      height: 16px;
-      border-radius: 999px;
-      background: #ebefff;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 2px #dbe3ff;
-    }
-
-    .progressBarInner {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #6f5cff, #8f7cff);
-      border-radius: 999px;
-      transition: width 0.3s ease;
-    }
-
     .stats {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -486,16 +454,6 @@
       <h1>Matek gyakorló 3.2</h1>
       <div class="sub">Lusta Mágussal</div>
 
-      <div class="progressWrap">
-        <div class="progressTop">
-          <span id="progressLabel">Haladás a következő szintig</span>
-          <span id="progressText">0 / 5</span>
-        </div>
-        <div class="progressBarOuter">
-          <div class="progressBarInner" id="progressBarInner"></div>
-        </div>
-      </div>
-
       <div class="stats">
         <div class="stat">
           <div class="statValue" id="scoreValue">0</div>
@@ -658,9 +616,6 @@
       var celebrationBox = document.getElementById("celebrationBox");
       var celebrationTitle = document.getElementById("celebrationTitle");
       var celebrationText = document.getElementById("celebrationText");
-      var progressLabel = document.getElementById("progressLabel");
-      var progressText = document.getElementById("progressText");
-      var progressBarInner = document.getElementById("progressBarInner");
       var magusSpeech = document.getElementById("magusSpeech");
 
       function setSpeech(text) {
@@ -669,9 +624,7 @@
 
       function setMessage(text, cls) {
         message.className = "message";
-        if (cls) {
-          message.className += " " + cls;
-        }
+        if (cls) message.className += " " + cls;
         message.textContent = text || "";
       }
 
@@ -699,10 +652,9 @@
 
       function shuffle(arr) {
         var a = arr.slice();
-        var i, j, t;
-        for (i = a.length - 1; i > 0; i--) {
-          j = Math.floor(Math.random() * (i + 1));
-          t = a[i];
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = a[i];
           a[i] = a[j];
           a[j] = t;
         }
@@ -726,34 +678,11 @@
       }
 
       function getLevelInfo(correctTotal) {
-        if (correctTotal >= 50) return { name: "Mágusmester", currentStart: 50, nextAt: null };
-        if (correctTotal >= 25) return { name: "Számmester", currentStart: 25, nextAt: 50 };
-        if (correctTotal >= 10) return { name: "Matekmágus", currentStart: 10, nextAt: 25 };
-        if (correctTotal >= 5) return { name: "Minimágus", currentStart: 5, nextAt: 10 };
-        return { name: "Újonc", currentStart: 0, nextAt: 5 };
-      }
-
-      function updateProgress() {
-        var level = getLevelInfo(state.correctTotal);
-
-        if (level.nextAt === null) {
-          progressLabel.textContent = "Elérted a legmagasabb szintet";
-          progressText.textContent = state.correctTotal + " helyes";
-          progressBarInner.style.width = "100%";
-          return;
-        }
-
-        var start = level.currentStart;
-        var totalNeeded = level.nextAt - start;
-        var current = state.correctTotal - start;
-        if (current < 0) current = 0;
-        var pct = Math.round((current / totalNeeded) * 100);
-        if (pct < 0) pct = 0;
-        if (pct > 100) pct = 100;
-
-        progressLabel.textContent = "Haladás a következő szintig";
-        progressText.textContent = current + " / " + totalNeeded;
-        progressBarInner.style.width = pct + "%";
+        if (correctTotal >= 50) return { name: "Mágusmester", nextAt: null };
+        if (correctTotal >= 25) return { name: "Számmester", nextAt: 50 };
+        if (correctTotal >= 10) return { name: "Matekmágus", nextAt: 25 };
+        if (correctTotal >= 5) return { name: "Minimágus", nextAt: 10 };
+        return { name: "Újonc", nextAt: 5 };
       }
 
       function updateStats() {
@@ -766,4 +695,569 @@
 
         if (level.nextAt) {
           levelBadge.textContent = level.name + " • következő szint: " + level.nextAt + " helyes";
-        } 
+        } else {
+          levelBadge.textContent = level.name + " • elérted a legmagasabb szintet";
+        }
+      }
+
+      function maybeLevelUp() {
+        var level = getLevelInfo(state.correctTotal);
+        if (level.name !== state.lastLevelName) {
+          state.lastLevelName = level.name;
+          celebrationTitle.textContent = "Szintlépés: " + level.name + "!";
+          celebrationText.textContent = "Egyre ügyesebb vagy a számolásban.";
+          celebrationBox.style.display = "block";
+          launchFireworks();
+          setTimeout(function() {
+            celebrationBox.style.display = "none";
+          }, 3500);
+          setSpeech("Szintet léptél. Ez már igazi mágia.");
+        }
+      }
+
+      function maybeShowExpandPrompt() {
+        if (state.score > 0 && state.score % 10 === 0 && state.lastExpandScore !== state.score) {
+          state.lastExpandScore = state.score;
+          rewardText.textContent = "Bővítsem a számkört? Most: " + state.min + "–" + state.max;
+          rewardBox.style.display = "block";
+        }
+      }
+
+      function speechForGood() {
+        var lines = [
+          "Szép volt.",
+          "Ez bizony helyes.",
+          "Ügyesen számoltál.",
+          "A varázslat működik.",
+          "Pontosan eltaláltad."
+        ];
+        setSpeech(lines[randInt(0, lines.length - 1)]);
+      }
+
+      function speechForBad() {
+        var lines = [
+          "Majdnem. Nézd meg újra.",
+          "Semmi baj, próbáld még egyszer.",
+          "Most nem ez lett a helyes.",
+          "Ebből még tanulunk.",
+          "Lassan, figyelmesen."
+        ];
+        setSpeech(lines[randInt(0, lines.length - 1)]);
+      }
+
+      function answerToString(val) {
+        return String(val).replace("-", "−");
+      }
+
+      function createTask() {
+        clampRange();
+        state.answer = "";
+        state.checked = false;
+        state.selectedChoice = null;
+        setMessage("", "");
+        sheetCard.style.display = "none";
+
+        var family = pickFamily();
+        var t = null;
+
+        if (family === "addsub") {
+          t = createAddSubTask();
+        } else if (family === "missing") {
+          t = createMissingTask();
+        } else if (family === "relation") {
+          t = createRelationTask();
+        } else if (family === "choice") {
+          t = createChoiceTask();
+        } else {
+          t = createTripleTask();
+        }
+
+        state.task = t;
+        renderTask();
+        updateStats();
+      }
+
+      function createAddSubTask() {
+        var a, b, op, result, tries = 0;
+
+        do {
+          a = randInt(state.min, state.max);
+          b = randInt(state.min, state.max);
+          op = Math.random() < 0.5 ? "+" : "−";
+          result = op === "+" ? a + b : a - b;
+          tries++;
+        } while ((result < state.min || result > state.max) && tries < 500);
+
+        return {
+          type: "addsub",
+          label: "Számolj",
+          a: a,
+          b: b,
+          op: op,
+          correct: result
+        };
+      }
+
+      function createMissingTask() {
+        var a, b, op, result, missingPos, tries = 0;
+
+        do {
+          a = randInt(state.min, state.max);
+          b = randInt(state.min, state.max);
+          op = Math.random() < 0.5 ? "+" : "−";
+          result = op === "+" ? a + b : a - b;
+          tries++;
+        } while ((result < state.min || result > state.max) && tries < 500);
+
+        missingPos = randInt(0, 2);
+
+        return {
+          type: "missing",
+          label: "Hiányzó szám",
+          a: a,
+          b: b,
+          op: op,
+          result: result,
+          missingPos: missingPos,
+          correct: missingPos === 0 ? a : (missingPos === 1 ? b : result)
+        };
+      }
+
+      function createRelationTask() {
+        var a = randInt(state.min, state.max);
+        var b = randInt(state.min, state.max);
+        var correct = "=";
+        if (a < b) correct = "<";
+        if (a > b) correct = ">";
+        return {
+          type: "relation",
+          label: "Reláció",
+          a: a,
+          b: b,
+          correct: correct
+        };
+      }
+
+      function createChoiceTask() {
+        var base = createAddSubTask();
+        var correct = base.correct;
+        var options = [correct];
+
+        while (options.length < 3) {
+          var delta = randInt(-5, 5);
+          if (delta === 0) delta = 1;
+          var wrong = correct + delta;
+          if (options.indexOf(wrong) === -1) options.push(wrong);
+        }
+
+        options = shuffle(options);
+
+        return {
+          type: "choice",
+          label: "Válassz a 3 közül",
+          a: base.a,
+          b: base.b,
+          op: base.op,
+          options: options,
+          correct: correct
+        };
+      }
+
+      function createTripleTask() {
+        var a, b, c, op1, op2, result, tries = 0;
+
+        do {
+          a = randInt(state.min, state.max);
+          b = randInt(state.min, state.max);
+          c = randInt(state.min, state.max);
+          op1 = Math.random() < 0.5 ? "+" : "−";
+          op2 = Math.random() < 0.5 ? "+" : "−";
+
+          result = (op1 === "+" ? a + b : a - b);
+          result = (op2 === "+" ? result + c : result - c);
+          tries++;
+        } while ((result < state.min || result > state.max) && tries < 800);
+
+        return {
+          type: "triple",
+          label: "3 elemű feladat",
+          a: a,
+          b: b,
+          c: c,
+          op1: op1,
+          op2: op2,
+          correct: result
+        };
+      }
+
+      function currentAnswerDisplay() {
+        if (state.task.type === "choice") {
+          return state.selectedChoice === null ? "" : answerToString(state.selectedChoice);
+        }
+        return state.answer === "" ? "" : answerToString(state.answer);
+      }
+
+      function renderTask() {
+        var t = state.task;
+        taskTag.textContent = t.label;
+
+        if (t.type === "addsub") {
+          taskArea.innerHTML =
+            '<div class="expr">' +
+            answerToString(t.a) + ' ' + t.op + ' ' + answerToString(t.b) + ' = ' +
+            '<span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span>' +
+            '</div>';
+          hintText.textContent = "A számot az alsó gombokkal írd be.";
+          numpad.style.display = "grid";
+        }
+
+        if (t.type === "missing") {
+          var left = t.missingPos === 0 ? '<span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span>' : answerToString(t.a);
+          var mid = t.missingPos === 1 ? '<span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span>' : answerToString(t.b);
+          var right = t.missingPos === 2 ? '<span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span>' : answerToString(t.result);
+
+          taskArea.innerHTML =
+            '<div class="expr">' +
+            left + ' ' + t.op + ' ' + mid + ' = ' + right +
+            '</div>';
+          hintText.textContent = "Találd meg a hiányzó számot.";
+          numpad.style.display = "grid";
+        }
+
+        if (t.type === "relation") {
+          taskArea.innerHTML =
+            '<div class="expr">' +
+            answerToString(t.a) + ' <span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span> ' + answerToString(t.b) +
+            '</div>' +
+            '<div class="relationDiff">Lehet: &lt; , &gt; vagy =</div>';
+          hintText.textContent = "Írd be: < vagy > vagy =";
+          numpad.style.display = "none";
+        }
+
+        if (t.type === "choice") {
+          var html =
+            '<div class="expr">' +
+            answerToString(t.a) + ' ' + t.op + ' ' + answerToString(t.b) + ' = ?' +
+            '</div>' +
+            '<div class="choiceWrap">';
+          for (var i = 0; i < t.options.length; i++) {
+            var val = t.options[i];
+            html += '<button type="button" class="choiceBtn" data-choice="' + val + '">' + answerToString(val) + '</button>';
+          }
+          html += '</div>';
+          taskArea.innerHTML = html;
+          hintText.textContent = "Koppints a helyes válaszra.";
+          numpad.style.display = "none";
+
+          var choiceBtns = taskArea.querySelectorAll(".choiceBtn");
+          choiceBtns.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+              if (state.checked) return;
+              state.selectedChoice = parseInt(btn.getAttribute("data-choice"), 10);
+              choiceBtns.forEach(function(b) {
+                b.style.outline = "";
+              });
+              btn.style.outline = "4px solid #6f5cff";
+            });
+          });
+        }
+
+        if (t.type === "triple") {
+          taskArea.innerHTML =
+            '<div class="expr">' +
+            answerToString(t.a) + ' ' + t.op1 + ' ' + answerToString(t.b) + ' ' + t.op2 + ' ' + answerToString(t.c) + ' = ' +
+            '<span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span>' +
+            '</div>';
+          hintText.textContent = "Számolj sorban balról jobbra.";
+          numpad.style.display = "grid";
+        }
+      }
+
+      function appendAnswer(ch) {
+        if (state.checked) return;
+        if (state.task.type === "choice") return;
+        if (state.task.type === "relation") {
+          if (ch === "<" || ch === ">" || ch === "=") {
+            state.answer = ch;
+            renderTask();
+          }
+          return;
+        }
+
+        if (ch === "-") {
+          if (state.answer.indexOf("-") === -1 && state.answer.length === 0) {
+            state.answer = "-";
+          }
+        } else {
+          if (state.answer === "0") {
+            state.answer = ch;
+          } else if (state.answer === "-0") {
+            state.answer = "-" + ch;
+          } else {
+            state.answer += ch;
+          }
+        }
+        renderTask();
+      }
+
+      function backspaceAnswer() {
+        if (state.checked) return;
+        if (state.task.type === "choice") return;
+        state.answer = state.answer.slice(0, -1);
+        renderTask();
+      }
+
+      function clearAnswer() {
+        if (state.checked) return;
+        if (state.task.type === "choice") {
+          state.selectedChoice = null;
+          renderTask();
+          return;
+        }
+        state.answer = "";
+        renderTask();
+      }
+
+      function getUserValue() {
+        if (state.task.type === "choice") return state.selectedChoice;
+        if (state.task.type === "relation") return state.answer;
+        if (state.answer === "" || state.answer === "-") return null;
+        return parseInt(state.answer, 10);
+      }
+
+      function markCorrectUI() {
+        if (state.task.type === "choice") {
+          var buttons = taskArea.querySelectorAll(".choiceBtn");
+          buttons.forEach(function(btn) {
+            var val = parseInt(btn.getAttribute("data-choice"), 10);
+            if (val === state.task.correct) btn.classList.add("good");
+          });
+        } else {
+          var blank = document.getElementById("answerBlank");
+          if (blank) blank.classList.add("good");
+        }
+      }
+
+      function markWrongUI() {
+        if (state.task.type === "choice") {
+          var buttons = taskArea.querySelectorAll(".choiceBtn");
+          buttons.forEach(function(btn) {
+            var val = parseInt(btn.getAttribute("data-choice"), 10);
+            if (val === state.task.correct) btn.classList.add("good");
+            if (state.selectedChoice !== null && val === state.selectedChoice && val !== state.task.correct) {
+              btn.classList.add("bad");
+            }
+          });
+        } else {
+          var blank = document.getElementById("answerBlank");
+          if (blank) blank.classList.add("bad");
+        }
+      }
+
+      function checkAnswer() {
+        if (state.checked) return;
+
+        var val = getUserValue();
+        if (val === null || val === "") {
+          setMessage("Adj meg egy választ.", "messageInfo");
+          setSpeech("Előbb írj be valamit.");
+          return;
+        }
+
+        state.checked = true;
+
+        if (val === state.task.correct) {
+          state.score += 1;
+          state.streak += 1;
+          state.correctTotal += 1;
+          if (state.streak % 5 === 0) state.stars += 1;
+
+          markCorrectUI();
+          setMessage("Helyes!", "messageGood");
+          speechForGood();
+          maybeLevelUp();
+          maybeShowExpandPrompt();
+        } else {
+          state.streak = 0;
+          markWrongUI();
+          setMessage("Nem jó. Helyes: " + answerToString(state.task.correct), "messageBad");
+          speechForBad();
+        }
+
+        updateStats();
+      }
+
+      function makeSheet() {
+        clampRange();
+        var lines = [];
+        for (var i = 0; i < 10; i++) {
+          var family = pickFamily();
+          var t;
+
+          if (family === "addsub") t = createAddSubTask();
+          else if (family === "missing") t = createMissingTask();
+          else if (family === "relation") t = createRelationTask();
+          else if (family === "choice") t = createChoiceTask();
+          else t = createTripleTask();
+
+          if (t.type === "addsub") {
+            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " = ____");
+          }
+          if (t.type === "missing") {
+            var left = t.missingPos === 0 ? "____" : answerToString(t.a);
+            var mid = t.missingPos === 1 ? "____" : answerToString(t.b);
+            var right = t.missingPos === 2 ? "____" : answerToString(t.result);
+            lines.push((i + 1) + ".  " + left + " " + t.op + " " + mid + " = " + right);
+          }
+          if (t.type === "relation") {
+            lines.push((i + 1) + ".  " + answerToString(t.a) + " ____ " + answerToString(t.b));
+          }
+          if (t.type === "choice") {
+            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " = ?");
+          }
+          if (t.type === "triple") {
+            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op1 + " " + answerToString(t.b) + " " + t.op2 + " " + answerToString(t.c) + " = ____");
+          }
+        }
+
+        sheetOutput.textContent = lines.join("\n");
+        sheetCard.style.display = "block";
+        setSpeech("Itt egy tízsoros gyakorló.");
+      }
+
+      function expandRange() {
+        state.min -= 5;
+        state.max += 5;
+        minInput.value = String(state.min);
+        maxInput.value = String(state.max);
+        rewardBox.style.display = "none";
+        updateStats();
+        createTask();
+        setSpeech("Bővítettem a számkört.");
+      }
+
+      function keepRange() {
+        rewardBox.style.display = "none";
+        setSpeech("Maradunk ennél a számkörnél.");
+      }
+
+      function launchFireworks() {
+        var canvas = document.getElementById("fireworksCanvas");
+        var ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        var particles = [];
+        for (var i = 0; i < 120; i++) {
+          particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            life: 60 + Math.random() * 20,
+            size: 2 + Math.random() * 3,
+            hue: Math.random() * 360
+          });
+        }
+
+        var frame = 0;
+        function tick() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          particles.forEach(function(p) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.life -= 1;
+            ctx.beginPath();
+            ctx.fillStyle = "hsla(" + p.hue + ", 100%, 60%, " + Math.max(p.life / 80, 0) + ")";
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          particles = particles.filter(function(p) { return p.life > 0; });
+          frame++;
+          if (particles.length > 0 && frame < 90) {
+            requestAnimationFrame(tick);
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+        tick();
+      }
+
+      document.querySelectorAll(".presetBtn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          minInput.value = btn.getAttribute("data-min");
+          maxInput.value = btn.getAttribute("data-max");
+          clampRange();
+          updateStats();
+          createTask();
+        });
+      });
+
+      document.querySelectorAll(".taskType").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          var type = btn.getAttribute("data-type");
+          state.enabledTypes[type] = !state.enabledTypes[type];
+          btn.classList.toggle("active", state.enabledTypes[type]);
+          createTask();
+        });
+      });
+
+      document.getElementById("applyRangeBtn").addEventListener("click", function() {
+        clampRange();
+        updateStats();
+        createTask();
+        setSpeech("Frissítettem a számkört.");
+      });
+
+      document.querySelectorAll(".digitBtn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          appendAnswer(btn.getAttribute("data-key"));
+        });
+      });
+
+      document.getElementById("minusBtn").addEventListener("click", function() {
+        if (state.task && state.task.type === "relation") {
+          appendAnswer("<");
+        } else {
+          appendAnswer("-");
+        }
+      });
+
+      document.getElementById("backBtn").addEventListener("click", backspaceAnswer);
+      document.getElementById("clearBtn").addEventListener("click", clearAnswer);
+      document.getElementById("checkBtn").addEventListener("click", checkAnswer);
+      document.getElementById("nextBtn").addEventListener("click", createTask);
+      document.getElementById("sheetBtn").addEventListener("click", makeSheet);
+      document.getElementById("expandYesBtn").addEventListener("click", expandRange);
+      document.getElementById("expandNoBtn").addEventListener("click", keepRange);
+
+      document.addEventListener("keydown", function(e) {
+        if (!state.task) return;
+
+        if (e.key >= "0" && e.key <= "9") appendAnswer(e.key);
+        else if (e.key === "-") {
+          if (state.task.type === "relation") appendAnswer("<");
+          else appendAnswer("-");
+        }
+        else if (e.key === "Backspace") backspaceAnswer();
+        else if (e.key === "Delete") clearAnswer();
+        else if (e.key === "Enter") {
+          if (state.checked) createTask();
+          else checkAnswer();
+        }
+        else if (state.task.type === "relation" && (e.key === "<" || e.key === ">" || e.key === "=")) {
+          appendAnswer(e.key);
+        }
+      });
+
+      clampRange();
+      updateStats();
+      createTask();
+      setSpeech("Kezdjük a varázslást.");
+    } catch (err) {
+      showDebug("Indítási hiba:\n" + err.message + "\n\n" + err.stack);
+    }
+  </script>
+</body>
+</html>
