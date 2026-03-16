@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matek gyakorló 3.2</title>
+  <title>Matek gyakorló 3.3</title>
   <style>
     body {
       margin: 0;
@@ -209,15 +209,15 @@
     }
 
     .good {
-      border-color: #18b368;
-      background: #edfff5;
-      color: #0f8b50;
+      border-color: #18b368 !important;
+      background: #edfff5 !important;
+      color: #0f8b50 !important;
     }
 
     .bad {
-      border-color: #e34d4d;
-      background: #fff0f0;
-      color: #c63939;
+      border-color: #e34d4d !important;
+      background: #fff0f0 !important;
+      color: #c63939 !important;
     }
 
     .relationDiff {
@@ -340,10 +340,41 @@
       margin-bottom: 10px;
     }
 
-    .sheetOutput {
-      white-space: pre-line;
-      font-size: 22px;
-      line-height: 1.8;
+    .sheetTaskList {
+      display: grid;
+      gap: 10px;
+    }
+
+    .sheetRow {
+      display: grid;
+      grid-template-columns: auto 110px;
+      gap: 10px;
+      align-items: center;
+      background: #f8faff;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .sheetAnswer {
+      width: 100%;
+      min-height: 52px;
+      border: 2px solid #d9def0;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      box-sizing: border-box;
+      background: white;
+    }
+
+    .sheetControls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
     }
 
     .choiceWrap {
@@ -355,7 +386,7 @@
       margin-top: 16px;
     }
 
-    .choiceBtn {
+    .choiceBtn, .relationBtn {
       min-height: 60px;
       border: none;
       border-radius: 16px;
@@ -366,16 +397,27 @@
       cursor: pointer;
     }
 
-    .choiceBtn.good {
+    .choiceBtn.good,
+    .relationBtn.good {
       background: #edfff5;
       color: #0f8b50;
       box-shadow: inset 0 0 0 3px #18b368;
     }
 
-    .choiceBtn.bad {
+    .choiceBtn.bad,
+    .relationBtn.bad {
       background: #fff0f0;
       color: #c63939;
       box-shadow: inset 0 0 0 3px #e34d4d;
+    }
+
+    .relationWrap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 340px;
+      margin-top: 16px;
     }
 
     .levelBadge {
@@ -435,6 +477,10 @@
         width: 100px;
         height: 100px;
       }
+
+      .sheetRow {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -451,7 +497,7 @@
         <div class="magusSpeech" id="magusSpeech">Kezdjük a varázslást.</div>
       </div>
 
-      <h1>Matek gyakorló 3.2</h1>
+      <h1>Matek gyakorló 3.3</h1>
       <div class="sub">Lusta Mágussal</div>
 
       <div class="stats">
@@ -556,8 +602,12 @@
     </div>
 
     <div class="card sheetCard" id="sheetCard">
-      <div class="sheetTitle">Gyakorló feladatsor</div>
-      <div class="sheetOutput" id="sheetOutput"></div>
+      <div class="sheetTitle">Kitölthető 10 soros gyakorló</div>
+      <div class="sheetTaskList" id="sheetTaskList"></div>
+      <div class="sheetControls">
+        <button type="button" class="pill active" id="sheetCheckBtn">Megoldások ellenőrzése</button>
+        <button type="button" class="pill" id="sheetNewBtn">Új 10 sor</button>
+      </div>
     </div>
   </div>
 
@@ -593,7 +643,9 @@
         lastExpandScore: -1,
         correctTotal: 0,
         lastLevelName: "Újonc",
-        selectedChoice: null
+        selectedChoice: null,
+        selectedRelation: null,
+        sheetTasks: []
       };
 
       var scoreValue = document.getElementById("scoreValue");
@@ -610,7 +662,7 @@
       var rewardBox = document.getElementById("rewardBox");
       var rewardText = document.getElementById("rewardText");
       var sheetCard = document.getElementById("sheetCard");
-      var sheetOutput = document.getElementById("sheetOutput");
+      var sheetTaskList = document.getElementById("sheetTaskList");
       var numpad = document.getElementById("numpad");
       var hintText = document.getElementById("hintText");
       var celebrationBox = document.getElementById("celebrationBox");
@@ -749,34 +801,6 @@
         return String(val).replace("-", "−");
       }
 
-      function createTask() {
-        clampRange();
-        state.answer = "";
-        state.checked = false;
-        state.selectedChoice = null;
-        setMessage("", "");
-        sheetCard.style.display = "none";
-
-        var family = pickFamily();
-        var t = null;
-
-        if (family === "addsub") {
-          t = createAddSubTask();
-        } else if (family === "missing") {
-          t = createMissingTask();
-        } else if (family === "relation") {
-          t = createRelationTask();
-        } else if (family === "choice") {
-          t = createChoiceTask();
-        } else {
-          t = createTripleTask();
-        }
-
-        state.task = t;
-        renderTask();
-        updateStats();
-      }
-
       function createAddSubTask() {
         var a, b, op, result, tries = 0;
 
@@ -890,9 +914,35 @@
         };
       }
 
+      function createTask() {
+        clampRange();
+        state.answer = "";
+        state.checked = false;
+        state.selectedChoice = null;
+        state.selectedRelation = null;
+        setMessage("", "");
+        sheetCard.style.display = "none";
+
+        var family = pickFamily();
+        var t;
+
+        if (family === "addsub") t = createAddSubTask();
+        else if (family === "missing") t = createMissingTask();
+        else if (family === "relation") t = createRelationTask();
+        else if (family === "choice") t = createChoiceTask();
+        else t = createTripleTask();
+
+        state.task = t;
+        renderTask();
+        updateStats();
+      }
+
       function currentAnswerDisplay() {
         if (state.task.type === "choice") {
           return state.selectedChoice === null ? "" : answerToString(state.selectedChoice);
+        }
+        if (state.task.type === "relation") {
+          return state.selectedRelation === null ? "" : state.selectedRelation;
         }
         return state.answer === "" ? "" : answerToString(state.answer);
       }
@@ -927,11 +977,25 @@
         if (t.type === "relation") {
           taskArea.innerHTML =
             '<div class="expr">' +
-            answerToString(t.a) + ' <span class="blank ' + (state.answer !== "" ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span> ' + answerToString(t.b) +
+            answerToString(t.a) + ' <span class="blank ' + (state.selectedRelation !== null ? "filled" : "") + '" id="answerBlank">' + currentAnswerDisplay() + '</span> ' + answerToString(t.b) +
             '</div>' +
-            '<div class="relationDiff">Lehet: &lt; , &gt; vagy =</div>';
-          hintText.textContent = "Írd be: < vagy > vagy =";
+            '<div class="relationWrap">' +
+            '<button type="button" class="relationBtn" data-rel="<">&lt;</button>' +
+            '<button type="button" class="relationBtn" data-rel=">">&gt;</button>' +
+            '<button type="button" class="relationBtn" data-rel="=">=</button>' +
+            '</div>';
+
+          hintText.textContent = "Válaszd ki a helyes relációjelet.";
           numpad.style.display = "none";
+
+          var relBtns = taskArea.querySelectorAll(".relationBtn");
+          relBtns.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+              if (state.checked) return;
+              state.selectedRelation = btn.getAttribute("data-rel");
+              renderTask();
+            });
+          });
         }
 
         if (t.type === "choice") {
@@ -975,14 +1039,7 @@
 
       function appendAnswer(ch) {
         if (state.checked) return;
-        if (state.task.type === "choice") return;
-        if (state.task.type === "relation") {
-          if (ch === "<" || ch === ">" || ch === "=") {
-            state.answer = ch;
-            renderTask();
-          }
-          return;
-        }
+        if (state.task.type === "choice" || state.task.type === "relation") return;
 
         if (ch === "-") {
           if (state.answer.indexOf("-") === -1 && state.answer.length === 0) {
@@ -1002,25 +1059,33 @@
 
       function backspaceAnswer() {
         if (state.checked) return;
-        if (state.task.type === "choice") return;
+        if (state.task.type === "choice" || state.task.type === "relation") return;
         state.answer = state.answer.slice(0, -1);
         renderTask();
       }
 
       function clearAnswer() {
         if (state.checked) return;
+
         if (state.task.type === "choice") {
           state.selectedChoice = null;
           renderTask();
           return;
         }
+
+        if (state.task.type === "relation") {
+          state.selectedRelation = null;
+          renderTask();
+          return;
+        }
+
         state.answer = "";
         renderTask();
       }
 
       function getUserValue() {
         if (state.task.type === "choice") return state.selectedChoice;
-        if (state.task.type === "relation") return state.answer;
+        if (state.task.type === "relation") return state.selectedRelation;
         if (state.answer === "" || state.answer === "-") return null;
         return parseInt(state.answer, 10);
       }
@@ -1032,9 +1097,16 @@
             var val = parseInt(btn.getAttribute("data-choice"), 10);
             if (val === state.task.correct) btn.classList.add("good");
           });
-        } else {
+        } else if (state.task.type === "relation") {
+          var relButtons = taskArea.querySelectorAll(".relationBtn");
+          relButtons.forEach(function(btn) {
+            if (btn.getAttribute("data-rel") === state.task.correct) btn.classList.add("good");
+          });
           var blank = document.getElementById("answerBlank");
           if (blank) blank.classList.add("good");
+        } else {
+          var blank2 = document.getElementById("answerBlank");
+          if (blank2) blank2.classList.add("good");
         }
       }
 
@@ -1048,9 +1120,20 @@
               btn.classList.add("bad");
             }
           });
-        } else {
+        } else if (state.task.type === "relation") {
+          var relButtons = taskArea.querySelectorAll(".relationBtn");
+          relButtons.forEach(function(btn) {
+            var rel = btn.getAttribute("data-rel");
+            if (rel === state.task.correct) btn.classList.add("good");
+            if (state.selectedRelation !== null && rel === state.selectedRelation && rel !== state.task.correct) {
+              btn.classList.add("bad");
+            }
+          });
           var blank = document.getElementById("answerBlank");
           if (blank) blank.classList.add("bad");
+        } else {
+          var blank2 = document.getElementById("answerBlank");
+          if (blank2) blank2.classList.add("bad");
         }
       }
 
@@ -1087,9 +1170,34 @@
         updateStats();
       }
 
+      function taskToSheetRowText(t) {
+        if (t.type === "addsub") {
+          return answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " =";
+        }
+
+        if (t.type === "missing") {
+          var left = t.missingPos === 0 ? "□" : answerToString(t.a);
+          var mid = t.missingPos === 1 ? "□" : answerToString(t.b);
+          var right = t.missingPos === 2 ? "□" : answerToString(t.result);
+          return left + " " + t.op + " " + mid + " = " + right;
+        }
+
+        if (t.type === "relation") {
+          return answerToString(t.a) + " ? " + answerToString(t.b);
+        }
+
+        if (t.type === "choice") {
+          return answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " =";
+        }
+
+        return answerToString(t.a) + " " + t.op1 + " " + answerToString(t.b) + " " + t.op2 + " " + answerToString(t.c) + " =";
+      }
+
       function makeSheet() {
         clampRange();
-        var lines = [];
+        state.sheetTasks = [];
+        sheetTaskList.innerHTML = "";
+
         for (var i = 0; i < 10; i++) {
           var family = pickFamily();
           var t;
@@ -1100,29 +1208,75 @@
           else if (family === "choice") t = createChoiceTask();
           else t = createTripleTask();
 
-          if (t.type === "addsub") {
-            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " = ____");
-          }
-          if (t.type === "missing") {
-            var left = t.missingPos === 0 ? "____" : answerToString(t.a);
-            var mid = t.missingPos === 1 ? "____" : answerToString(t.b);
-            var right = t.missingPos === 2 ? "____" : answerToString(t.result);
-            lines.push((i + 1) + ".  " + left + " " + t.op + " " + mid + " = " + right);
-          }
+          state.sheetTasks.push(t);
+
+          var row = document.createElement("div");
+          row.className = "sheetRow";
+
+          var label = document.createElement("div");
+          label.textContent = (i + 1) + ".  " + taskToSheetRowText(t);
+
+          var input = document.createElement("input");
+          input.className = "sheetAnswer";
+          input.setAttribute("data-index", i);
+
           if (t.type === "relation") {
-            lines.push((i + 1) + ".  " + answerToString(t.a) + " ____ " + answerToString(t.b));
+            input.type = "text";
+            input.maxLength = 1;
+            input.placeholder = "<";
+          } else {
+            input.type = "text";
+            input.inputMode = "numeric";
+            input.placeholder = "?";
           }
-          if (t.type === "choice") {
-            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op + " " + answerToString(t.b) + " = ?");
-          }
-          if (t.type === "triple") {
-            lines.push((i + 1) + ".  " + answerToString(t.a) + " " + t.op1 + " " + answerToString(t.b) + " " + t.op2 + " " + answerToString(t.c) + " = ____");
-          }
+
+          row.appendChild(label);
+          row.appendChild(input);
+          sheetTaskList.appendChild(row);
         }
 
-        sheetOutput.textContent = lines.join("\n");
         sheetCard.style.display = "block";
-        setSpeech("Itt egy tízsoros gyakorló.");
+        setSpeech("Itt a kitölthető tízsoros.");
+      }
+
+      function checkSheet() {
+        if (!state.sheetTasks.length) return;
+
+        var inputs = sheetTaskList.querySelectorAll(".sheetAnswer");
+        var goodCount = 0;
+
+        inputs.forEach(function(input, idx) {
+          var t = state.sheetTasks[idx];
+          var raw = input.value.trim();
+          var value;
+
+          if (t.type === "relation") {
+            value = raw;
+          } else {
+            if (raw === "" || raw === "-") {
+              input.classList.remove("good", "bad");
+              return;
+            }
+            value = parseInt(raw, 10);
+            if (isNaN(value)) {
+              input.classList.remove("good");
+              input.classList.add("bad");
+              return;
+            }
+          }
+
+          if (value === t.correct) {
+            input.classList.remove("bad");
+            input.classList.add("good");
+            goodCount++;
+          } else {
+            input.classList.remove("good");
+            input.classList.add("bad");
+          }
+        });
+
+        setSpeech("Ellenőriztem a gyakorlót.");
+        setMessage("10 sorból " + goodCount + " helyes.", goodCount === 10 ? "messageGood" : "messageInfo");
       }
 
       function expandRange() {
@@ -1217,11 +1371,7 @@
       });
 
       document.getElementById("minusBtn").addEventListener("click", function() {
-        if (state.task && state.task.type === "relation") {
-          appendAnswer("<");
-        } else {
-          appendAnswer("-");
-        }
+        appendAnswer("-");
       });
 
       document.getElementById("backBtn").addEventListener("click", backspaceAnswer);
@@ -1229,6 +1379,8 @@
       document.getElementById("checkBtn").addEventListener("click", checkAnswer);
       document.getElementById("nextBtn").addEventListener("click", createTask);
       document.getElementById("sheetBtn").addEventListener("click", makeSheet);
+      document.getElementById("sheetCheckBtn").addEventListener("click", checkSheet);
+      document.getElementById("sheetNewBtn").addEventListener("click", makeSheet);
       document.getElementById("expandYesBtn").addEventListener("click", expandRange);
       document.getElementById("expandNoBtn").addEventListener("click", keepRange);
 
@@ -1236,18 +1388,12 @@
         if (!state.task) return;
 
         if (e.key >= "0" && e.key <= "9") appendAnswer(e.key);
-        else if (e.key === "-") {
-          if (state.task.type === "relation") appendAnswer("<");
-          else appendAnswer("-");
-        }
+        else if (e.key === "-") appendAnswer("-");
         else if (e.key === "Backspace") backspaceAnswer();
         else if (e.key === "Delete") clearAnswer();
         else if (e.key === "Enter") {
           if (state.checked) createTask();
           else checkAnswer();
-        }
-        else if (state.task.type === "relation" && (e.key === "<" || e.key === ">" || e.key === "=")) {
-          appendAnswer(e.key);
         }
       });
 
