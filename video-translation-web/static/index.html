@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video → Voice-Over Translator</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px; min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0f1220; color: #e8ebf5;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .card {
+      width: 100%; max-width: 560px; margin-top: 6vh;
+      background: #171a2b; border: 1px solid #2a2f4a; border-radius: 18px;
+      padding: 28px 26px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p.sub { margin: 0 0 22px; color: #98a0c0; font-size: 14px; }
+    label { display: block; font-size: 13px; color: #b9c0e0; margin: 16px 0 6px; font-weight: 600; }
+    input[type=file], select {
+      width: 100%; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid #333a5c; background: #10132200; color: #e8ebf5; font-size: 14px;
+    }
+    select { background: #10142a; }
+    .drop {
+      border: 2px dashed #384169; border-radius: 12px; padding: 22px; text-align: center;
+      color: #98a0c0; font-size: 14px; cursor: pointer; background: #12162c;
+    }
+    .drop.on { border-color: #6f5cff; color: #cdd3f5; }
+    button {
+      margin-top: 20px; width: 100%; padding: 13px; border: none; border-radius: 12px;
+      background: #6f5cff; color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .bar { height: 10px; border-radius: 999px; background: #262c48; overflow: hidden; margin-top: 18px; }
+    .bar > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#6f5cff,#42a5ff); transition: width .4s; }
+    .stage { margin-top: 10px; font-size: 14px; color: #b9c0e0; text-align: center; min-height: 20px; }
+    .err { color: #ff8080; }
+    .dl { display: flex; gap: 10px; margin-top: 18px; }
+    .dl a {
+      flex: 1; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none;
+      background: #22c57e; color: #05110b; font-weight: 700; font-size: 14px;
+    }
+    .dl a.sec { background: #2a2f4a; color: #e8ebf5; }
+    .hidden { display: none; }
+    .foot { margin-top: 20px; font-size: 12px; color: #6d759a; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Video → Voice-Over Translator</h1>
+    <p class="sub">Upload a video and get it back with a translated voice-over and a matching subtitle file.</p>
+
+    <div id="form">
+      <div class="drop" id="drop">
+        <span id="dropText">Drop a video here, or click to choose</span>
+        <input id="file" type="file" accept="video/*" class="hidden">
+      </div>
+
+      <label for="lang">Source language</label>
+      <select id="lang">
+        <option value="">Auto-detect</option>
+        <option value="zh">Chinese</option>
+        <option value="en">English</option>
+        <option value="ja">Japanese</option>
+        <option value="ko">Korean</option>
+        <option value="de">German</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="ru">Russian</option>
+      </select>
+
+      <button id="go" disabled>Translate</button>
+    </div>
+
+    <div id="progress" class="hidden">
+      <div class="bar"><span id="fill"></span></div>
+      <div class="stage" id="stage">Uploading…</div>
+    </div>
+
+    <div id="result" class="hidden">
+      <div class="dl">
+        <a id="dlVideo" href="#">Download video</a>
+        <a id="dlSrt" class="sec" href="#">Download .srt</a>
+      </div>
+      <button id="again">Translate another</button>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </div>
+
+  <script>
+    var file = document.getElementById("file");
+    var drop = document.getElementById("drop");
+    var dropText = document.getElementById("dropText");
+    var go = document.getElementById("go");
+    var formEl = document.getElementById("form");
+    var progress = document.getElementById("progress");
+    var result = document.getElementById("result");
+    var fill = document.getElementById("fill");
+    var stage = document.getElementById("stage");
+    var foot = document.getElementById("foot");
+    var chosen = null;
+
+    fetch("/api/health").then(function (r) { return r.json(); }).then(function (h) {
+      var missing = [];
+      if (!h.stt_configured) missing.push("speech-to-text");
+      if (!h.llm_configured) missing.push("translation");
+      if (!h.tts_configured) missing.push("text-to-speech");
+      foot.textContent = missing.length
+        ? "⚠ Server missing API keys for: " + missing.join(", ")
+        : "Translating into " + h.target_language + " · " + h.llm_provider;
+    }).catch(function () {});
+
+    drop.addEventListener("click", function () { file.click(); });
+    ["dragover", "dragenter"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("on"); });
+    });
+    ["dragleave", "drop"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("on"); });
+    });
+    drop.addEventListener("drop", function (ev) {
+      if (ev.dataTransfer.files.length) setFile(ev.dataTransfer.files[0]);
+    });
+    file.addEventListener("change", function () {
+      if (file.files.length) setFile(file.files[0]);
+    });
+
+    function setFile(f) {
+      chosen = f;
+      dropText.textContent = f.name;
+      go.disabled = false;
+    }
+
+    go.addEventListener("click", function () {
+      if (!chosen) return;
+      var fd = new FormData();
+      fd.append("video", chosen);
+      fd.append("source_language", document.getElementById("lang").value);
+      formEl.classList.add("hidden");
+      progress.classList.remove("hidden");
+      setProgress("Uploading…", 2);
+
+      fetch("/api/jobs", { method: "POST", body: fd })
+        .then(function (r) {
+          if (!r.ok) return r.json().then(function (e) { throw new Error(e.detail || "Upload failed"); });
+          return r.json();
+        })
+        .then(function (j) { poll(j.job_id); })
+        .catch(fail);
+    });
+
+    function poll(id) {
+      fetch("/api/jobs/" + id).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.status === "error") { fail(new Error(j.error || "Processing failed")); return; }
+        setProgress(cap(j.stage), j.progress);
+        if (j.status === "done") {
+          document.getElementById("dlVideo").href = "/api/jobs/" + id + "/download/video";
+          document.getElementById("dlSrt").href = "/api/jobs/" + id + "/download/srt";
+          progress.classList.add("hidden");
+          result.classList.remove("hidden");
+          return;
+        }
+        setTimeout(function () { poll(id); }, 1500);
+      }).catch(function () { setTimeout(function () { poll(id); }, 3000); });
+    }
+
+    function setProgress(text, pct) { stage.textContent = text; fill.style.width = (pct || 0) + "%"; }
+    function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+    function fail(err) {
+      progress.classList.add("hidden");
+      formEl.classList.remove("hidden");
+      go.disabled = false;
+      stage.className = "stage err";
+      foot.innerHTML = '<span class="err">' + (err.message || "Something went wrong") + "</span>";
+    }
+
+    document.getElementById("again").addEventListener("click", function () { location.reload(); });
+  </script>
+</body>
+</html>
