@@ -1,0 +1,30 @@
+{
+  "video": "path/to/video.mp4",
+  "work_dir": "vo_work",
+
+  "source_language": "zh",
+  "whisper_model": "medium",
+  "whisper_device": "cuda",
+  "whisper_fp16": true,
+
+  "ffmpeg": "ffmpeg",
+  "ffprobe": "ffprobe",
+  "ffmpeg_bin_dir": "",
+
+  "comfy_url": "http://127.0.0.1:8188",
+  "comfy_key_file": ".comfy_key",
+
+  "tts_voice": "George (male, british)",
+  "tts_model": "eleven_v3",
+  "tts_stability": 0.5,
+  "tts_similarity_boost": 0.75,
+  "tts_speed": 1.0,
+  "tts_style": 0.0,
+  "tts_use_speaker_boost": true,
+  "tts_seed": 1,
+  "tts_output_format": "mp3_44100_192",
+
+  "min_gap": 0.12,
+  "lead": 0.8,
+  "audio_bitrate": "192k"
+}

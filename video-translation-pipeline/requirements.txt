@@ -1,0 +1,12 @@
+# Runtime deps for the video -> Hungarian voice-over pipeline.
+#
+# The pipeline scripts themselves use only the Python standard library for the
+# ComfyUI HTTP calls, so the ONLY pip dependency is Whisper (used by
+# transcribe.py). ffmpeg / ffprobe are external binaries (not pip packages) and
+# ElevenLabs TTS runs inside ComfyUI via its comfy.org proxy, so no elevenlabs
+# package is needed here.
+#
+# On the ComfyUI portable install this is already present; listed for parity on
+# a fresh machine.
+
+openai-whisper

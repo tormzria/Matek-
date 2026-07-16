@@ -1,0 +1,262 @@
+"""Shared helpers for the video -> Hungarian voice-over pipeline.
+
+Everything that more than one step needs lives here: config loading, the
+ComfyUI /prompt submit-poll-download cycle, the ElevenLabs TTS graph builder,
+ffprobe duration probing, and .srt formatting.
+
+Pure standard library (urllib + json) so it runs under ComfyUI's embedded
+python without pip-installing anything. ffmpeg / ffprobe are external
+executables; Whisper is only imported by transcribe.py.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
+DEFAULTS = {
+    "video": "",
+    "work_dir": "vo_work",
+    "source_language": "zh",
+    "whisper_model": "medium",
+    "whisper_device": "cuda",
+    "whisper_fp16": True,
+    "ffmpeg": "ffmpeg",
+    "ffprobe": "ffprobe",
+    "ffmpeg_bin_dir": "",
+    "comfy_url": "http://127.0.0.1:8188",
+    "comfy_key_file": ".comfy_key",
+    "tts_voice": "George (male, british)",
+    "tts_model": "eleven_v3",
+    "tts_stability": 0.5,
+    "tts_similarity_boost": 0.75,
+    "tts_speed": 1.0,
+    "tts_style": 0.0,
+    "tts_use_speaker_boost": True,
+    "tts_seed": 1,
+    "tts_output_format": "mp3_44100_192",
+    "min_gap": 0.12,
+    "lead": 0.8,
+    "audio_bitrate": "192k",
+}
+
+
+def load_config(path="config.json"):
+    """Load config.json merged over DEFAULTS. Missing file => defaults only."""
+    cfg = dict(DEFAULTS)
+    if os.path.isfile(path):
+        with open(path, "r", encoding="utf-8") as fh:
+            cfg.update(json.load(fh))
+    else:
+        print("[config] %s not found, using built-in defaults "
+              "(copy config.example.json -> config.json)" % path, file=sys.stderr)
+
+    # Put a configured ffmpeg bin dir on PATH so ffmpeg/ffprobe/whisper find it.
+    bin_dir = cfg.get("ffmpeg_bin_dir") or ""
+    if bin_dir and os.path.isdir(bin_dir):
+        os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+    return cfg
+
+
+def work_dir(cfg, *parts):
+    """Absolute path inside the job's work folder, creating parents as needed."""
+    base = cfg["work_dir"]
+    path = os.path.join(base, *parts) if parts else base
+    parent = path if not parts else os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    return path
+
+
+def read_comfy_key(cfg):
+    """Read the comfy.org API key (one line, no newline)."""
+    key_file = cfg["comfy_key_file"]
+    if not os.path.isfile(key_file):
+        raise SystemExit(
+            "comfy.org key file not found: %s\n"
+            "Create it with your comfy.org API key on a single line." % key_file)
+    with open(key_file, "r", encoding="utf-8") as fh:
+        return fh.read().strip()
+
+
+# ---------------------------------------------------------------------------
+# ComfyUI API
+# ---------------------------------------------------------------------------
+
+def _http_json(url, payload=None, timeout=120):
+    data = None
+    headers = {}
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def comfy_submit(cfg, graph):
+    """POST a prompt graph, returning its prompt_id.
+
+    The comfy.org key rides in extra_data so nodes that proxy to comfy.org
+    (ElevenLabs TTS, etc.) authenticate headlessly.
+    """
+    body = {"prompt": graph, "extra_data": {"api_key_comfy_org": read_comfy_key(cfg)}}
+    out = _http_json(cfg["comfy_url"].rstrip("/") + "/prompt", body)
+    pid = out.get("prompt_id")
+    if not pid:
+        raise RuntimeError("ComfyUI did not return a prompt_id: %r" % out)
+    return pid
+
+
+def comfy_wait(cfg, prompt_id, poll=1.0, timeout=600):
+    """Block until a prompt finishes; return its /history outputs dict."""
+    base = cfg["comfy_url"].rstrip("/")
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        hist = _http_json("%s/history/%s" % (base, prompt_id))
+        entry = hist.get(prompt_id)
+        if entry:
+            status = entry.get("status", {})
+            if status.get("status_str") == "error" or status.get("completed") is False \
+                    and status.get("status_str") not in (None, "success"):
+                # Surface the node error messages if present.
+                raise RuntimeError("ComfyUI job %s failed: %s" % (prompt_id, json.dumps(status)))
+            outputs = entry.get("outputs")
+            if outputs:
+                return outputs
+        time.sleep(poll)
+    raise TimeoutError("ComfyUI job %s did not complete within %ss" % (prompt_id, timeout))
+
+
+def comfy_download(cfg, filename, subfolder="", ftype="output"):
+    """Fetch generated bytes from ComfyUI's /view endpoint."""
+    q = urllib.parse.urlencode({"filename": filename, "subfolder": subfolder, "type": ftype})
+    url = cfg["comfy_url"].rstrip("/") + "/view?" + q
+    with urllib.request.urlopen(url, timeout=120) as resp:
+        return resp.read()
+
+
+def first_audio_output(outputs):
+    """Pull the first {filename, subfolder, type} audio entry from history outputs."""
+    for node_out in outputs.values():
+        for audio in node_out.get("audio", []) or []:
+            return audio
+    raise RuntimeError("No audio output found in ComfyUI history: %r" % outputs)
+
+
+# ---------------------------------------------------------------------------
+# ElevenLabs TTS graph
+# ---------------------------------------------------------------------------
+
+def build_tts_graph(cfg, text, filename_prefix):
+    """A 3-node ElevenLabs graph in ComfyUI /prompt (API) format.
+
+    ElevenLabsVoiceSelector -> ElevenLabsTextToSpeech -> SaveAudio.
+
+    Dynamic-combo sub-inputs carry a "model." prefix in the flat JSON. eleven_v3
+    only accepts speed + similarity_boost; eleven_multilingual_v2 also takes
+    style + use_speaker_boost and rejects language_code="hu" (leave it empty so
+    the multilingual model auto-detects Hungarian).
+    """
+    tts_inputs = {
+        "voice": ["voice_selector", 0],
+        "text": text,
+        "stability": cfg["tts_stability"],
+        "apply_text_normalization": "auto",
+        "model": cfg["tts_model"],
+        "model.speed": cfg["tts_speed"],
+        "model.similarity_boost": cfg["tts_similarity_boost"],
+        "language_code": "",
+        "seed": cfg["tts_seed"],
+        "output_format": cfg["tts_output_format"],
+    }
+    if cfg["tts_model"] == "eleven_multilingual_v2":
+        tts_inputs["model.style"] = cfg["tts_style"]
+        tts_inputs["model.use_speaker_boost"] = cfg["tts_use_speaker_boost"]
+
+    return {
+        "voice_selector": {
+            "class_type": "ElevenLabsVoiceSelector",
+            "inputs": {"voice": cfg["tts_voice"]},
+        },
+        "tts": {
+            "class_type": "ElevenLabsTextToSpeech",
+            "inputs": tts_inputs,
+        },
+        "save": {
+            "class_type": "SaveAudio",
+            "inputs": {"audio": ["tts", 0], "filename_prefix": filename_prefix},
+        },
+    }
+
+
+def synth_segment(cfg, text, filename_prefix, dest_path):
+    """Run one TTS graph end to end and write the audio to dest_path.
+
+    Returns the destination path. Raises on ComfyUI / download failure.
+    """
+    graph = build_tts_graph(cfg, text, filename_prefix)
+    pid = comfy_submit(cfg, graph)
+    outputs = comfy_wait(cfg, pid)
+    audio = first_audio_output(outputs)
+    data = comfy_download(cfg, audio["filename"], audio.get("subfolder", ""),
+                          audio.get("type", "output"))
+    os.makedirs(os.path.dirname(dest_path) or ".", exist_ok=True)
+    with open(dest_path, "wb") as fh:
+        fh.write(data)
+    return dest_path
+
+
+# ---------------------------------------------------------------------------
+# ffprobe / ffmpeg
+# ---------------------------------------------------------------------------
+
+def media_duration(cfg, path):
+    """Duration of an audio/video file in seconds via ffprobe."""
+    out = subprocess.check_output([
+        cfg["ffprobe"], "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1", path,
+    ])
+    return float(out.decode("utf-8").strip())
+
+
+def run(cmd):
+    """Run a command, echoing it; raise on non-zero exit."""
+    print("+ " + " ".join('"%s"' % c if " " in str(c) else str(c) for c in cmd))
+    subprocess.run(cmd, check=True)
+
+
+# ---------------------------------------------------------------------------
+# Subtitles
+# ---------------------------------------------------------------------------
+
+def srt_timestamp(seconds):
+    """seconds -> 'HH:MM:SS,mmm'."""
+    if seconds < 0:
+        seconds = 0.0
+    ms = int(round(seconds * 1000))
+    h, ms = divmod(ms, 3600_000)
+    m, ms = divmod(ms, 60_000)
+    s, ms = divmod(ms, 1000)
+    return "%02d:%02d:%02d,%03d" % (h, m, s, ms)
+
+
+def write_srt(path, cues):
+    """cues: iterable of (start_s, end_s, text). Writes a UTF-8 .srt."""
+    lines = []
+    for i, (start, end, text) in enumerate(cues, 1):
+        lines.append(str(i))
+        lines.append("%s --> %s" % (srt_timestamp(start), srt_timestamp(end)))
+        lines.append(text.strip())
+        lines.append("")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines))
+    return path

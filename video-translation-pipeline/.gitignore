@@ -1,0 +1,8 @@
+# Local secrets and per-job artifacts — never commit these.
+.comfy_key
+config.json
+segments.json
+regen_edits.json
+vo_work/
+__pycache__/
+*.pyc
