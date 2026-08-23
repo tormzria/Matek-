@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,9 +12,15 @@
     <span class="dot" id="connDot"></span>
     <h1>Visitor Prediction Game</h1>
   </div>
-  <div class="balance">
-    <span class="label">Credits</span>
-    <span class="value" id="creditsValue">–</span>
+  <div class="header-right">
+    <div class="nickname">
+      <span class="label">Playing as</span>
+      <input type="text" id="nicknameInput" maxlength="20" placeholder="Player" />
+    </div>
+    <div class="balance">
+      <span class="label">Credits</span>
+      <span class="value" id="creditsValue">–</span>
+    </div>
   </div>
 </header>
 
@@ -23,7 +29,7 @@
   <section class="card counter-card">
     <div class="counter-label">ACTIVE VISITORS NOW</div>
     <div class="counter-value" id="visitorCount">–</div>
-    <div class="counter-sub">Nyiss meg ezt az oldalt új ablakban/fülön, hogy nőjön a szám.</div>
+    <div class="counter-sub">Open this page in another tab/window to make the count go up.</div>
   </section>
 
   <section class="card chart-card">
@@ -51,7 +57,7 @@
         <button data-sec="7200">2 h</button>
       </div>
       <input type="number" id="horizonMinutes" min="1" step="1" value="5" />
-      <span class="unit">perc múlva</span>
+      <span class="unit">minutes from now</span>
     </div>
 
     <div class="field">

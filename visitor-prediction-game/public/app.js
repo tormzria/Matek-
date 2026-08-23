@@ -21,6 +21,7 @@ const guessError = el("guessError");
 const guessesList = el("guessesList");
 const leaderboardList = el("leaderboardList");
 const toast = el("toast");
+const nicknameInput = el("nicknameInput");
 
 function uuid() {
   return crypto.randomUUID();
@@ -116,7 +117,7 @@ function drawChart() {
   ctx.clearRect(0, 0, cssWidth, cssHeight);
 
   if (historyPoints.length < 2) {
-    chartStats.textContent = "Gyűjtjük az adatokat…";
+    chartStats.textContent = "Collecting data…";
     return;
   }
 
@@ -257,12 +258,12 @@ placeGuessBtn.addEventListener("click", async () => {
     });
     const data = await res.json();
     if (!res.ok) {
-      guessError.textContent = data.error || "Hiba történt";
+      guessError.textContent = data.error || "Something went wrong";
       return;
     }
     await Promise.all([fetchMe(), fetchGuesses()]);
   } catch {
-    guessError.textContent = "Hálózati hiba, próbáld újra.";
+    guessError.textContent = "Network error, please try again.";
   } finally {
     placeGuessBtn.disabled = false;
   }
@@ -270,12 +271,40 @@ placeGuessBtn.addEventListener("click", async () => {
 
 // ---------- Me / balance ----------
 
+let nicknameLoaded = false;
+
 async function fetchMe() {
   const res = await fetch(`/api/me?userId=${userId}`);
   const user = await res.json();
   userId = user.userId;
   localStorage.setItem("userId", userId);
   creditsValue.textContent = Math.round(user.credits * 100) / 100;
+  if (!nicknameLoaded) {
+    nicknameInput.value = user.name || "";
+    nicknameInput.placeholder = `Player-${userId.slice(0, 4)}`;
+    nicknameLoaded = true;
+  }
+}
+
+let nicknameSaveTimer = null;
+nicknameInput.addEventListener("input", () => {
+  clearTimeout(nicknameSaveTimer);
+  nicknameSaveTimer = setTimeout(saveNickname, 600);
+});
+nicknameInput.addEventListener("blur", saveNickname);
+
+async function saveNickname() {
+  clearTimeout(nicknameSaveTimer);
+  try {
+    await fetch("/api/me/name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, name: nicknameInput.value }),
+    });
+    fetchLeaderboard();
+  } catch {
+    // best-effort; the nickname just won't be saved this time
+  }
 }
 
 // ---------- My guesses ----------
@@ -288,7 +317,7 @@ async function fetchGuesses() {
 
 function renderGuesses() {
   if (!lastGuesses.length) {
-    guessesList.innerHTML = `<div class="row-item"><span class="muted">Még nincs tippelésed.</span></div>`;
+    guessesList.innerHTML = `<div class="row-item"><span class="muted">No predictions yet.</span></div>`;
     return;
   }
   guessesList.innerHTML = lastGuesses
@@ -332,8 +361,8 @@ function handleGuessResult(guess) {
   showToast(
     won ? "win" : "lose",
     won
-      ? `Nyertél! Tipp: ${guess.low}–${guess.high}, tényleges: ${guess.actual}. Nyeremény: ${guess.payout}`
-      : `Vesztettél. Tipp: ${guess.low}–${guess.high}, tényleges: ${guess.actual}.`
+      ? `You won! Guess: ${guess.low}–${guess.high}, actual: ${guess.actual}. Payout: ${guess.payout}`
+      : `You lost. Guess: ${guess.low}–${guess.high}, actual: ${guess.actual}.`
   );
 }
 
@@ -351,7 +380,7 @@ async function fetchLeaderboard() {
   leaderboardList.innerHTML = rows
     .map(
       (r) => `<div class="row-item ${r.userId === userId ? "me" : ""}">
-        <span>#${r.rank} ${r.displayName}${r.userId === userId ? " (te)" : ""}</span>
+        <span>#${r.rank} ${r.displayName}${r.userId === userId ? " (you)" : ""}</span>
         <span>${Math.round(r.credits * 100) / 100}</span>
       </div>`
     )

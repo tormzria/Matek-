@@ -23,6 +23,7 @@ import {
   persist,
   recordSnapshot,
   removeSession,
+  setUserName,
   sweepStaleSessions,
   touchSession,
 } from "./store.js";
@@ -41,6 +42,16 @@ const RANGE_MS = { "1h": 3_600_000, "3h": 10_800_000, "24h": 86_400_000 };
 
 app.get("/api/me", (req, res) => {
   const user = getOrCreateUser(req.query.userId);
+  res.json(user);
+});
+
+app.post("/api/me/name", (req, res) => {
+  const { userId, name } = req.body || {};
+  if (!userId || typeof userId !== "string") {
+    return res.status(400).json({ error: "userId required" });
+  }
+  const trimmed = typeof name === "string" ? name.trim().slice(0, 20) : "";
+  const user = setUserName(userId, trimmed || null);
   res.json(user);
 });
 

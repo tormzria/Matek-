@@ -97,12 +97,19 @@ export function getOrCreateUser(userId) {
     if (!state.users.has(id)) {
       state.users.set(id, {
         userId: id,
+        name: null,
         credits: STARTING_CREDITS,
         createdAt: Date.now(),
       });
     }
   }
   return state.users.get(id);
+}
+
+export function setUserName(userId, name) {
+  const user = getOrCreateUser(userId);
+  user.name = name;
+  return user;
 }
 
 export function saveGuess(guess) {
@@ -126,7 +133,7 @@ export function leaderboard(limit = 20) {
     .map((u, i) => ({
       rank: i + 1,
       userId: u.userId,
-      displayName: `Player-${u.userId.slice(0, 4)}`,
+      displayName: u.name || `Player-${u.userId.slice(0, 4)}`,
       credits: u.credits,
     }));
 }

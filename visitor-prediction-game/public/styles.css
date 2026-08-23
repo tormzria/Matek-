@@ -40,6 +40,23 @@ body {
 }
 .dot.connected { background: var(--win); box-shadow: 0 0 8px var(--win); }
 
+.header-right { display: flex; align-items: center; gap: 20px; }
+
+.nickname { text-align: right; }
+.nickname .label { display: block; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.nickname input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 2px 0;
+  width: 130px;
+  text-align: right;
+}
+.nickname input:focus { outline: none; border-bottom-color: var(--accent); }
+
 .balance { text-align: right; }
 .balance .label { display: block; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 .balance .value { font-size: 22px; font-weight: 700; color: var(--accent-2); }
