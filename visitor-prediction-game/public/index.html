@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visitor Prediction Game</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot" id="connDot"></span>
+    <h1>Visitor Prediction Game</h1>
+  </div>
+  <div class="balance">
+    <span class="label">Credits</span>
+    <span class="value" id="creditsValue">–</span>
+  </div>
+</header>
+
+<main class="grid">
+
+  <section class="card counter-card">
+    <div class="counter-label">ACTIVE VISITORS NOW</div>
+    <div class="counter-value" id="visitorCount">–</div>
+    <div class="counter-sub">Nyiss meg ezt az oldalt új ablakban/fülön, hogy nőjön a szám.</div>
+  </section>
+
+  <section class="card chart-card">
+    <div class="card-header">
+      <span>HISTORY</span>
+      <div class="range-toggle" id="rangeToggle">
+        <button data-range="1h" class="active">1h</button>
+        <button data-range="3h">3h</button>
+        <button data-range="24h">24h</button>
+      </div>
+    </div>
+    <canvas id="historyChart" height="220"></canvas>
+    <div class="chart-stats" id="chartStats"></div>
+  </section>
+
+  <section class="card predict-card">
+    <div class="card-header"><span>NEW PREDICTION</span></div>
+
+    <div class="field">
+      <label>WHEN?</label>
+      <div class="preset-row" id="horizonPresets">
+        <button data-sec="60">1 min (demo)</button>
+        <button data-sec="300" class="active">5 min</button>
+        <button data-sec="1800">30 min</button>
+        <button data-sec="7200">2 h</button>
+      </div>
+      <input type="number" id="horizonMinutes" min="1" step="1" value="5" />
+      <span class="unit">perc múlva</span>
+    </div>
+
+    <div class="field">
+      <label>HOW MANY?</label>
+      <div class="range-row">
+        <input type="number" id="lowInput" min="0" step="1" value="0" />
+        <span class="dash">–</span>
+        <input type="number" id="highInput" min="0" step="1" value="0" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>STAKE</label>
+      <input type="number" id="stakeInput" min="1" step="1" value="10" />
+    </div>
+
+    <div class="multiplier-row">
+      <div class="multiplier-box">
+        <span class="label">MULTIPLIER</span>
+        <span class="value" id="multiplierValue">x–</span>
+      </div>
+      <div class="multiplier-box">
+        <span class="label">POTENTIAL PAYOUT</span>
+        <span class="value" id="payoutValue">–</span>
+      </div>
+    </div>
+
+    <button id="placeGuessBtn" class="place-btn">PLACE GUESS</button>
+    <div class="error-msg" id="guessError"></div>
+  </section>
+
+  <section class="card guesses-card">
+    <div class="card-header"><span>MY PREDICTIONS</span></div>
+    <div id="guessesList" class="list"></div>
+  </section>
+
+  <section class="card leaderboard-card">
+    <div class="card-header"><span>LEADERBOARD</span></div>
+    <div id="leaderboardList" class="list"></div>
+  </section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
