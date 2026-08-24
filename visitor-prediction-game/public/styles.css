@@ -31,6 +31,7 @@ body {
 
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand h1 { font-size: 18px; margin: 0; font-weight: 600; letter-spacing: 0.3px; }
+.brand .logo { height: 22px; width: auto; display: block; }
 
 .dot {
   width: 10px; height: 10px; border-radius: 50%;
