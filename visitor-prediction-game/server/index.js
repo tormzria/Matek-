@@ -182,5 +182,5 @@ for (const sig of ["SIGINT", "SIGTERM"]) {
 }
 
 server.listen(PORT, () => {
-  console.log(`Visitor Prediction Game listening on http://localhost:${PORT}`);
+  console.log(`Anticipate listening on http://localhost:${PORT}`);
 });

@@ -1,4 +1,4 @@
-# Realtime Visitor Prediction Game — MVP
+# Anticipate — Realtime Visitor Prediction Game (MVP)
 
 A live dashboard where the website's own real-time visitor count *is* the
 game: players predict how many active visitors there will be at a future
