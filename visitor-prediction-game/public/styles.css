@@ -89,10 +89,23 @@ body {
   font-weight: 700;
 }
 
+.intro-card {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 14px 24px;
+}
+.intro-card p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 .counter-card { text-align: center; grid-column: 1 / -1; }
 .counter-label { font-size: 12px; letter-spacing: 2px; color: var(--text-dim); font-weight: 700; }
 .counter-value { font-size: 72px; font-weight: 800; color: var(--accent-2); line-height: 1.1; }
-.counter-sub { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
 
 .chart-card canvas { width: 100%; display: block; }
 .chart-stats { display: flex; gap: 18px; margin-top: 10px; font-size: 12px; color: var(--text-dim); }
