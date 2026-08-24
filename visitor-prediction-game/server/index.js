@@ -20,6 +20,7 @@ import {
   leaderboard,
   load,
   pendingGuesses,
+  pendingGuessesPublic,
   persist,
   recordSnapshot,
   removeSession,
@@ -102,6 +103,7 @@ app.post("/api/guesses", (req, res) => {
       stake: Number(stake),
     });
     res.status(201).json(guess);
+    broadcastActiveGuesses();
   } catch (err) {
     if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
     throw err;
@@ -126,6 +128,10 @@ function broadcast(message) {
   }
 }
 
+function broadcastActiveGuesses() {
+  broadcast({ type: "activeGuesses", guesses: pendingGuessesPublic() });
+}
+
 wss.on("connection", (ws) => {
   ws.isAlive = true;
   ws.on("pong", () => {
@@ -134,6 +140,7 @@ wss.on("connection", (ws) => {
   ws.send(
     JSON.stringify({ type: "tick", count: activeVisitorCount(), timestamp: Date.now() })
   );
+  ws.send(JSON.stringify({ type: "activeGuesses", guesses: pendingGuessesPublic() }));
 });
 
 setInterval(() => {
@@ -163,13 +170,16 @@ setInterval(() => {
 
 setInterval(() => {
   const now = Date.now();
+  let resolvedAny = false;
   for (const guess of pendingGuesses()) {
     if (guess.targetTimestamp <= now) {
       const actual = activeVisitorCount();
       resolveGuess(guess, actual);
       broadcast({ type: "guessResult", guess });
+      resolvedAny = true;
     }
   }
+  if (resolvedAny) broadcastActiveGuesses();
 }, 1000);
 
 setInterval(persist, PERSIST_INTERVAL_MS);

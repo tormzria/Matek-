@@ -99,6 +99,7 @@ export function getOrCreateUser(userId) {
         userId: id,
         name: null,
         credits: STARTING_CREDITS,
+        streak: 0,
         createdAt: Date.now(),
       });
     }
@@ -112,12 +113,42 @@ export function setUserName(userId, name) {
   return user;
 }
 
+export function displayNameFor(userId) {
+  const user = state.users.get(userId);
+  if (!user) return `Player-${userId.slice(0, 4)}`;
+  return user.name || `Player-${user.userId.slice(0, 4)}`;
+}
+
+export function applyStreak(userId, won) {
+  const user = getOrCreateUser(userId);
+  const current = user.streak || 0;
+  if (won) {
+    user.streak = current >= 0 ? current + 1 : 1;
+  } else {
+    user.streak = current <= 0 ? current - 1 : -1;
+  }
+  return user.streak;
+}
+
 export function saveGuess(guess) {
   state.guesses.set(guess.id, guess);
 }
 
 export function pendingGuesses() {
   return [...state.guesses.values()].filter((g) => g.status === "pending");
+}
+
+// Anonymized view of in-flight guesses for the "arena" activity feed - no
+// userId, no stake/credits, just enough to render a live near-miss row.
+export function pendingGuessesPublic() {
+  return pendingGuesses().map((g) => ({
+    id: g.id,
+    displayName: displayNameFor(g.userId),
+    low: g.low,
+    high: g.high,
+    targetTimestamp: g.targetTimestamp,
+    multiplier: g.multiplier,
+  }));
 }
 
 export function guessesForUser(userId) {
@@ -133,7 +164,7 @@ export function leaderboard(limit = 20) {
     .map((u, i) => ({
       rank: i + 1,
       userId: u.userId,
-      displayName: u.name || `Player-${u.userId.slice(0, 4)}`,
+      displayName: displayNameFor(u.userId),
       credits: u.credits,
     }));
 }

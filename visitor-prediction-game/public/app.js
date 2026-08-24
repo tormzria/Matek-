@@ -20,6 +20,8 @@ const placeGuessBtn = el("placeGuessBtn");
 const guessError = el("guessError");
 const guessesList = el("guessesList");
 const leaderboardList = el("leaderboardList");
+const arenaList = el("arenaList");
+const streakLabel = el("streakLabel");
 const toast = el("toast");
 const nicknameInput = el("nicknameInput");
 
@@ -37,6 +39,10 @@ let currentRange = "1h";
 let historyPoints = [];
 let lastGuesses = [];
 let hasSuggestedRange = false;
+let latestCount = 0;
+let activeGuesses = [];
+let recentResults = [];
+let revealInProgress = false;
 
 // ---------- Heartbeat (defines "active visitor") ----------
 
@@ -76,11 +82,16 @@ function connectWS() {
       pushHistoryPoint(msg.point);
       drawChart();
     } else if (msg.type === "guessResult") handleGuessResult(msg.guess);
+    else if (msg.type === "activeGuesses") {
+      activeGuesses = msg.guesses;
+      renderArena();
+    }
   };
 }
 connectWS();
 
 function updateVisitorCount(count) {
+  latestCount = count;
   visitorCount.textContent = count;
   if (!hasSuggestedRange) {
     hasSuggestedRange = true;
@@ -88,6 +99,7 @@ function updateVisitorCount(count) {
     highInput.value = count + 5;
     scheduleMultiplierPreview();
   }
+  renderArena();
 }
 
 // ---------- History chart ----------
@@ -195,6 +207,43 @@ rangeToggle.addEventListener("click", (e) => {
 
 window.addEventListener("resize", () => drawChart());
 
+// ---------- Live activity arena (other players' in-flight/resolved guesses) ----------
+
+function renderArena() {
+  const now = Date.now();
+  recentResults = recentResults.filter((r) => r.expiresAt > now);
+
+  const resolvedRows = recentResults.map((g) => {
+    const won = g.status === "won";
+    return `<div class="row-item arena-resolved ${won ? "won" : "lost"}">
+      <div>
+        <div>${g.displayName || "Player"} &middot; ${g.low}–${g.high}</div>
+        <div class="muted">actual: <b>${g.actual}</b></div>
+      </div>
+      <span class="badge ${won ? "won" : "lost"}">${won ? `WIN x${g.multiplier.toFixed(2)}` : "LOSS"}</span>
+    </div>`;
+  });
+
+  const pendingRows = [...activeGuesses]
+    .sort((a, b) => a.targetTimestamp - b.targetTimestamp)
+    .slice(0, 12)
+    .map((g) => {
+      const inRange = latestCount >= g.low && latestCount <= g.high;
+      return `<div class="row-item">
+        <div>
+          <div>${g.displayName} &middot; ${g.low}–${g.high}</div>
+          <div class="muted">live: <b class="arena-live ${inRange ? "in" : "out"}">${latestCount}</b> &middot; ${formatCountdown(g.targetTimestamp)}</div>
+        </div>
+        <span class="badge pending">x${g.multiplier.toFixed(2)}</span>
+      </div>`;
+    });
+
+  const rows = [...resolvedRows, ...pendingRows];
+  arenaList.innerHTML = rows.length
+    ? rows.join("")
+    : `<div class="row-item"><span class="muted">No predictions in flight right now.</span></div>`;
+}
+
 // ---------- Prediction form ----------
 
 horizonPresets.addEventListener("click", (e) => {
@@ -273,12 +322,26 @@ placeGuessBtn.addEventListener("click", async () => {
 
 let nicknameLoaded = false;
 
+function streakText(streak) {
+  const s = streak || 0;
+  if (s >= 5) return { text: "Reading the crowd like a pro", cls: "hot" };
+  if (s >= 3) return { text: "On a roll", cls: "hot" };
+  if (s >= 1) return { text: "Warming up", cls: "hot" };
+  if (s <= -5) return { text: "Ice cold", cls: "cold" };
+  if (s <= -3) return { text: "Due for a bounce", cls: "cold" };
+  if (s <= -1) return { text: "Cooling off", cls: "cold" };
+  return { text: "", cls: "" };
+}
+
 async function fetchMe() {
   const res = await fetch(`/api/me?userId=${userId}`);
   const user = await res.json();
   userId = user.userId;
   localStorage.setItem("userId", userId);
   creditsValue.textContent = Math.round(user.credits * 100) / 100;
+  const streak = streakText(user.streak);
+  streakLabel.textContent = streak.text;
+  streakLabel.className = `streak-tag ${streak.cls}`;
   if (!nicknameLoaded) {
     nicknameInput.value = user.name || "";
     nicknameInput.placeholder = `Player-${userId.slice(0, 4)}`;
@@ -329,7 +392,7 @@ function renderGuesses() {
           ? `<span class="badge won">WIN x${g.multiplier.toFixed(2)}</span>`
           : `<span class="badge lost">LOSS</span>`;
       const actual = g.actual !== null ? ` &middot; actual: <b>${g.actual}</b>` : "";
-      return `<div class="row-item">
+      return `<div class="row-item" data-id="${g.id}" data-status="${g.status}">
         <div>
           <div>${g.low}–${g.high} &middot; stake ${g.stake}${actual}</div>
           <div class="muted">${new Date(g.createdAt).toLocaleTimeString()} → ${new Date(g.targetTimestamp).toLocaleTimeString()}</div>
@@ -349,14 +412,70 @@ function formatCountdown(targetTimestamp) {
 }
 
 setInterval(() => {
-  if (lastGuesses.some((g) => g.status === "pending")) renderGuesses();
+  if (!revealInProgress && lastGuesses.some((g) => g.status === "pending")) renderGuesses();
 }, 1000);
 
 function handleGuessResult(guess) {
+  // Everyone sees every resolution in the live activity arena.
+  recentResults.unshift({ ...guess, expiresAt: Date.now() + 6000 });
+  activeGuesses = activeGuesses.filter((g) => g.id !== guess.id);
+  renderArena();
+
+  if (guess.userId !== userId) {
+    fetchLeaderboard();
+    return;
+  }
+
+  const row = guessesList.querySelector(`[data-id="${guess.id}"]`);
+  if (row && row.dataset.status === "pending") {
+    animateOwnReveal(row, guess);
+  } else {
+    finalizeOwnResult(guess);
+  }
+}
+
+function animateOwnReveal(row, guess) {
+  revealInProgress = true;
+  row.dataset.status = "resolving";
+  const badge = row.querySelector(".badge");
+  if (badge) {
+    badge.className = "badge pending";
+    badge.textContent = "LOCKING IN…";
+  }
+
+  setTimeout(() => {
+    const start = latestCount;
+    const end = guess.actual;
+    const duration = 700;
+    const startTime = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - startTime) / duration);
+      const value = Math.round(start + (end - start) * t);
+      if (badge) badge.textContent = String(value);
+      if (t < 1) requestAnimationFrame(step);
+      else finishReveal();
+    }
+    requestAnimationFrame(step);
+  }, 600);
+
+  function finishReveal() {
+    const won = guess.status === "won";
+    row.classList.add(won ? "reveal-flash-win" : "reveal-flash-lose");
+    if (badge) {
+      badge.className = `badge ${won ? "won" : "lost"}`;
+      badge.textContent = won ? `WIN x${guess.multiplier.toFixed(2)}` : "LOSS";
+    }
+    setTimeout(() => {
+      revealInProgress = false;
+      finalizeOwnResult(guess);
+    }, 900);
+  }
+}
+
+function finalizeOwnResult(guess) {
+  fetchMe();
   fetchGuesses();
   fetchLeaderboard();
-  if (guess.userId !== userId) return;
-  fetchMe();
   const won = guess.status === "won";
   showToast(
     won ? "win" : "lose",
@@ -392,6 +511,7 @@ setInterval(fetchLeaderboard, 15000);
 // ---------- Init ----------
 
 (async function init() {
+  renderArena();
   await Promise.all([fetchMe(), fetchHistory(currentRange), fetchGuesses(), fetchLeaderboard()]);
   const cur = await fetch("/api/current-visitors").then((r) => r.json());
   updateVisitorCount(cur.count);

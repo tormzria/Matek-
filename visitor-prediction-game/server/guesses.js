@@ -7,7 +7,13 @@ import {
   MIN_STAKE,
 } from "./config.js";
 import { computeMultiplier } from "./multiplier.js";
-import { activeVisitorCount, getOrCreateUser, saveGuess } from "./store.js";
+import {
+  activeVisitorCount,
+  applyStreak,
+  displayNameFor,
+  getOrCreateUser,
+  saveGuess,
+} from "./store.js";
 
 export class ValidationError extends Error {}
 
@@ -86,5 +92,7 @@ export function resolveGuess(guess, actualCount) {
     const user = getOrCreateUser(guess.userId);
     user.credits += guess.payout;
   }
+  guess.streakAfter = applyStreak(guess.userId, won);
+  guess.displayName = displayNameFor(guess.userId);
   return guess;
 }

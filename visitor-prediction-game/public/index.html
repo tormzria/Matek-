@@ -20,6 +20,7 @@
     <div class="balance">
       <span class="label">Credits</span>
       <span class="value" id="creditsValue">–</span>
+      <span class="streak-tag" id="streakLabel"></span>
     </div>
   </div>
 </header>
@@ -90,6 +91,11 @@
 
     <button id="placeGuessBtn" class="place-btn">PLACE GUESS</button>
     <div class="error-msg" id="guessError"></div>
+  </section>
+
+  <section class="card arena-card">
+    <div class="card-header"><span>LIVE ACTIVITY</span></div>
+    <div id="arenaList" class="list"></div>
   </section>
 
   <section class="card guesses-card">
