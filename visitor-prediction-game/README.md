@@ -67,6 +67,27 @@ below.
    snapshot) and updates the player's balance and the leaderboard.
 5. Results push to the browser over WebSocket — no polling/refresh needed.
 
+## Where they're playing from (the world map)
+
+This is deliberately a slow game — the payoff is minutes away, not
+milliseconds — so the dashboard needs something worth looking at during the
+wait. The map (`public/app.js`'s `initMap`/`renderMapLocations`, backed by
+`server/geoip.js` and `store.js`'s `visitorLocations`) is that something:
+
+- On each heartbeat, the server does a **one-time, cached** IP → city
+  lookup (via the free `ip-api.com`, no key required) for that browser tab's
+  session. Private/local IPs are skipped entirely.
+- Locations are only ever surfaced **aggregated by city** ("Budapest — 3
+  active"), never as a single-visitor pin, and only for currently-active
+  sessions — nothing is persisted to disk (`state.json` never touches
+  `sessions`), so location data doesn't outlive the process.
+- Rendered with **Leaflet.js + CARTO's free dark basemap tiles**, loaded
+  from their public CDNs (no API key, no server-side map cost) — the one
+  external dependency in an otherwise self-contained app.
+- Accuracy caveat worth being upfront about: IP geolocation is often only
+  city-level and regularly wrong for mobile carriers, VPNs, and corporate
+  proxies. It's presented as "approximately," not "precisely."
+
 ## The multiplier model
 
 Implemented in `server/multiplier.js`. Rather than a hand-picked table of
@@ -146,7 +167,8 @@ GET  /api/multiplier-preview?horizonSec=&low=&high=
 POST /api/guesses   { userId, horizonSec, low, high, stake }
 GET  /api/guesses?userId=
 GET  /api/leaderboard
-WS   /ws  ->  { type: "tick" | "snapshot" | "guessResult", ... }
+GET  /api/visitor-locations           -> [{ city, country, countryCode, lat, lon, count }]
+WS   /ws  ->  { type: "tick" | "snapshot" | "guessResult" | "activeGuesses" | "visitorLocations", ... }
 ```
 
 ## Scaling beyond the MVP

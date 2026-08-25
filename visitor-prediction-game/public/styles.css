@@ -201,6 +201,32 @@ body {
 
 .leaderboard-card .row-item.me { border-color: var(--accent); }
 
+.map-card { grid-column: 1 / -1; }
+.world-map {
+  height: 280px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0a0d18;
+}
+.map-note { margin-top: 8px; font-size: 11px; }
+.leaflet-container { background: #0a0d18; font-family: inherit; }
+.leaflet-control-attribution {
+  background: rgba(10,13,24,0.7) !important;
+  color: var(--text-dim) !important;
+}
+.leaflet-control-attribution a { color: var(--text-dim) !important; }
+.leaflet-control-zoom a {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+}
+.map-tooltip {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+  font-size: 12px;
+}
+
 .arena-card { grid-column: 1 / -1; }
 .arena-live { font-variant-numeric: tabular-nums; transition: color 0.2s; }
 .arena-live.in { color: var(--win); }

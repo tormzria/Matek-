@@ -85,7 +85,7 @@ function connectWS() {
     else if (msg.type === "activeGuesses") {
       activeGuesses = msg.guesses;
       renderArena();
-    }
+    } else if (msg.type === "visitorLocations") renderMapLocations(msg.locations);
   };
 }
 connectWS();
@@ -206,6 +206,57 @@ rangeToggle.addEventListener("click", (e) => {
 });
 
 window.addEventListener("resize", () => drawChart());
+
+// ---------- World map (approximate, aggregated visitor locations) ----------
+
+let worldMap = null;
+let mapMarkers = null;
+
+function initMap() {
+  if (typeof L === "undefined") return; // Leaflet failed to load (offline CDN?) - map card stays empty
+  worldMap = L.map("worldMap", {
+    worldCopyJump: true,
+    minZoom: 1,
+    maxZoom: 8,
+    zoomControl: true,
+  }).setView([20, 10], 1.5);
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: "abcd",
+    maxZoom: 19,
+  }).addTo(worldMap);
+
+  mapMarkers = L.layerGroup().addTo(worldMap);
+  window.addEventListener("resize", () => worldMap.invalidateSize());
+}
+
+function renderMapLocations(locations) {
+  if (!worldMap || !mapMarkers) return;
+  mapMarkers.clearLayers();
+  for (const loc of locations) {
+    const radius = 6 + Math.min(16, (loc.count - 1) * 3);
+    const marker = L.circleMarker([loc.lat, loc.lon], {
+      radius,
+      color: "#35d0ba",
+      weight: 1,
+      fillColor: "#35d0ba",
+      fillOpacity: 0.45,
+    }).addTo(mapMarkers);
+    const label = loc.city ? `${loc.city}, ${loc.country}` : loc.country;
+    marker.bindTooltip(`${label} &middot; ${loc.count} active`, { className: "map-tooltip" });
+  }
+}
+
+async function fetchVisitorLocations() {
+  try {
+    const res = await fetch("/api/visitor-locations");
+    renderMapLocations(await res.json());
+  } catch {
+    // best-effort; the map just stays empty until the next WS update
+  }
+}
 
 // ---------- Live activity arena (other players' in-flight/resolved guesses) ----------
 
@@ -512,7 +563,14 @@ setInterval(fetchLeaderboard, 15000);
 
 (async function init() {
   renderArena();
-  await Promise.all([fetchMe(), fetchHistory(currentRange), fetchGuesses(), fetchLeaderboard()]);
+  initMap();
+  await Promise.all([
+    fetchMe(),
+    fetchHistory(currentRange),
+    fetchGuesses(),
+    fetchLeaderboard(),
+    fetchVisitorLocations(),
+  ]);
   const cur = await fetch("/api/current-visitors").then((r) => r.json());
   updateVisitorCount(cur.count);
   updateMultiplierPreview();

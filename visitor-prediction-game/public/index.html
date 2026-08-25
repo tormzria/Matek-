@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Anticipate</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -93,6 +94,12 @@
     <div class="error-msg" id="guessError"></div>
   </section>
 
+  <section class="card map-card">
+    <div class="card-header"><span>WHERE THEY'RE PLAYING FROM</span></div>
+    <div id="worldMap" class="world-map"></div>
+    <div class="map-note muted">Approximate location from IP address, grouped by city. This is a deliberately slow game — something to look at while you wait.</div>
+  </section>
+
   <section class="card arena-card">
     <div class="card-header"><span>LIVE ACTIVITY</span></div>
     <div id="arenaList" class="list"></div>
@@ -112,6 +119,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import {
   TICK_BROADCAST_MS,
 } from "./config.js";
 import { placeGuess, previewMultiplier, resolveGuess, ValidationError } from "./guesses.js";
+import { geoLookup } from "./geoip.js";
 import { updateVolatilityModel } from "./multiplier.js";
 import {
   activeVisitorCount,
@@ -19,14 +20,17 @@ import {
   guessesForUser,
   leaderboard,
   load,
+  needsGeoLookup,
   pendingGuesses,
   pendingGuessesPublic,
   persist,
   recordSnapshot,
   removeSession,
+  setSessionGeo,
   setUserName,
   sweepStaleSessions,
   touchSession,
+  visitorLocations,
 } from "./store.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +39,7 @@ const PORT = process.env.PORT || 3000;
 load();
 
 const app = express();
+app.set("trust proxy", true); // behind Render's proxy - trust X-Forwarded-For for real client IPs
 app.use(express.json());
 app.use(express.text({ type: "text/plain" }));
 app.use(express.static(path.join(__dirname, "..", "public")));
@@ -63,6 +68,13 @@ app.post("/api/heartbeat", (req, res) => {
   }
   touchSession(tabId);
   res.json({ count: activeVisitorCount() });
+
+  if (needsGeoLookup(tabId)) {
+    geoLookup(req.ip).then((geo) => {
+      setSessionGeo(tabId, geo);
+      if (geo) broadcastVisitorLocations();
+    });
+  }
 });
 
 app.post("/api/leave", (req, res) => {
@@ -118,6 +130,10 @@ app.get("/api/leaderboard", (_req, res) => {
   res.json(leaderboard());
 });
 
+app.get("/api/visitor-locations", (_req, res) => {
+  res.json(visitorLocations());
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
@@ -132,6 +148,10 @@ function broadcastActiveGuesses() {
   broadcast({ type: "activeGuesses", guesses: pendingGuessesPublic() });
 }
 
+function broadcastVisitorLocations() {
+  broadcast({ type: "visitorLocations", locations: visitorLocations() });
+}
+
 wss.on("connection", (ws) => {
   ws.isAlive = true;
   ws.on("pong", () => {
@@ -141,6 +161,7 @@ wss.on("connection", (ws) => {
     JSON.stringify({ type: "tick", count: activeVisitorCount(), timestamp: Date.now() })
   );
   ws.send(JSON.stringify({ type: "activeGuesses", guesses: pendingGuessesPublic() }));
+  ws.send(JSON.stringify({ type: "visitorLocations", locations: visitorLocations() }));
 });
 
 setInterval(() => {
@@ -164,6 +185,7 @@ let snapshotTicks = 0;
 setInterval(() => {
   const point = recordSnapshot();
   broadcast({ type: "snapshot", point });
+  broadcastVisitorLocations(); // lets departed visitors' points fade off the map
   snapshotTicks += 1;
   if (snapshotTicks % 4 === 0) updateVolatilityModel(getHistory());
 }, SNAPSHOT_INTERVAL_MS);

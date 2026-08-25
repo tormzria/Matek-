@@ -18,7 +18,9 @@ const DATA_FILE = path.join(__dirname, "..", "data", "state.json");
  * databases before this ever runs multi-instance or in production.
  */
 export const state = {
-  // tabId -> lastHeartbeat epoch ms. One entry per open browser tab/window.
+  // tabId -> { lastHeartbeat, geo }. One entry per open browser tab/window.
+  // geo is undefined (not yet looked up), null (lookup failed/private IP),
+  // or { country, countryCode, city, lat, lon }. Never persisted to disk.
   sessions: new Map(),
   // userId -> { userId, credits, createdAt }
   users: new Map(),
@@ -51,7 +53,9 @@ export function persist() {
 }
 
 export function touchSession(tabId) {
-  state.sessions.set(tabId, Date.now());
+  const existing = state.sessions.get(tabId);
+  if (existing) existing.lastHeartbeat = Date.now();
+  else state.sessions.set(tabId, { lastHeartbeat: Date.now(), geo: undefined });
 }
 
 export function removeSession(tabId) {
@@ -60,18 +64,54 @@ export function removeSession(tabId) {
 
 export function sweepStaleSessions() {
   const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-  for (const [tabId, lastSeen] of state.sessions) {
-    if (lastSeen < cutoff) state.sessions.delete(tabId);
+  for (const [tabId, session] of state.sessions) {
+    if (session.lastHeartbeat < cutoff) state.sessions.delete(tabId);
   }
 }
 
 export function activeVisitorCount() {
   const cutoff = Date.now() - ACTIVE_WINDOW_MS;
   let count = 0;
-  for (const lastSeen of state.sessions.values()) {
-    if (lastSeen >= cutoff) count += 1;
+  for (const session of state.sessions.values()) {
+    if (session.lastHeartbeat >= cutoff) count += 1;
   }
   return count;
+}
+
+// Whether tabId still needs a geo lookup kicked off (never attempted yet).
+export function needsGeoLookup(tabId) {
+  const session = state.sessions.get(tabId);
+  return !!session && session.geo === undefined;
+}
+
+export function setSessionGeo(tabId, geo) {
+  const session = state.sessions.get(tabId);
+  if (session) session.geo = geo;
+}
+
+// Aggregated, privacy-lite view for the map: one point per active
+// city/country pair with how many current sessions are there - never a
+// per-visitor pin.
+export function visitorLocations() {
+  const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+  const buckets = new Map();
+  for (const session of state.sessions.values()) {
+    if (session.lastHeartbeat < cutoff || !session.geo) continue;
+    const g = session.geo;
+    const key = `${g.countryCode}:${g.city}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.count += 1;
+    else
+      buckets.set(key, {
+        lat: g.lat,
+        lon: g.lon,
+        country: g.country,
+        countryCode: g.countryCode,
+        city: g.city,
+        count: 1,
+      });
+  }
+  return [...buckets.values()];
 }
 
 export function recordSnapshot() {
