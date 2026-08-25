@@ -81,9 +81,13 @@ wait. The map (`public/app.js`'s `initMap`/`renderMapLocations`, backed by
   active"), never as a single-visitor pin, and only for currently-active
   sessions — nothing is persisted to disk (`state.json` never touches
   `sessions`), so location data doesn't outlive the process.
-- Rendered with **Leaflet.js + CARTO's free dark basemap tiles**, loaded
-  from their public CDNs (no API key, no server-side map cost) — the one
-  external dependency in an otherwise self-contained app.
+- Rendered with **Leaflet.js + standard OpenStreetMap tiles** (free, no API
+  key, single host per OSM's current tile usage policy), loaded from their
+  public CDN/tile server — the one external dependency in an otherwise
+  self-contained app. Recolored dark with a CSS filter on the tile layer
+  (`invert` + `hue-rotate`) rather than a separate dark tile service, since
+  the free keyless dark basemap tile providers (e.g. CARTO's raster
+  basemaps) have moved to requiring an API key.
 - Accuracy caveat worth being upfront about: IP geolocation is often only
   city-level and regularly wrong for mobile carriers, VPNs, and corporate
   proxies. It's presented as "approximately," not "precisely."

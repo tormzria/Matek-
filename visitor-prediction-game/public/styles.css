@@ -210,6 +210,9 @@ body {
 }
 .map-note { margin-top: 8px; font-size: 11px; }
 .leaflet-container { background: #0a0d18; font-family: inherit; }
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
 .leaflet-control-attribution {
   background: rgba(10,13,24,0.7) !important;
   color: var(--text-dim) !important;
